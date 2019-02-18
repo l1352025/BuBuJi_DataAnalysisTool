@@ -1,0 +1,13 @@
+
+
+消息体格式约定
+di(device_id): 设备id
+ds(device_status): 设备状态? 1 ：正常，2、损坏、3其他
+dv(device_voltage)：设备电压
+si(station_id)：基站id
+sd(signal_data)：信号量（30-110）
+ss(step_sum)： 步数总计
+ts(time_stamp): 时间戳（yyyy-MM-dd HH：mm：ss,SSS）
+v(version): 版本号
+? 示例 ：
+{"di":"201810130013","ds":"2","dv":"2.2","si":"601809290003","sd":"110","ss":"1856","ts":"2018-10-31 13:33:44,000","v":"1","sn":"201"}
