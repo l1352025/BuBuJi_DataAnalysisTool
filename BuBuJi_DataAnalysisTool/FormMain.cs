@@ -14,26 +14,58 @@ namespace BuBuJi_DataAnalysisTool
 {
     public partial class FormMain : Form
     {
-        private SQLiteHelper sqldb;
+        private SQLiteHelper _sqldb;
 
         public FormMain()
         {
             InitializeComponent();
             this.Text = Application.ProductName + "_v" + Application.ProductVersion + "   " + Application.CompanyName;
 
-
+            InitialDb();
         }
+
+        #region 窗口关闭处理
+
+        private void Clear()
+        {
+            
+        }
+
+        #endregion
 
         #region 数据存档、检索、删除
         private void InitialDb()
         {
             string dbName = "AppData\\bubujiData.db";
 
-            if (sqldb == null)
+            if (_sqldb == null)
             {
-                sqldb = new SQLiteHelper("provider=System.Data.SQLite; data source=" + dbName);
-                sqldb.CreateDb(dbName);
-                sqldb.CreateTable("DocInfo", new string[] { "id", "WebId", "EPC", "SaveTime", "IsExported" }, new string[] { "INTEGER primary key AUTOINCREMENT", "TEXT", "TEXT", "TEXT", "INTEGER" });
+                _sqldb = new SQLiteHelper("provider=System.Data.SQLite; data source=" + dbName);
+                _sqldb.CreateDb(dbName);
+
+                string sql = "CREATE TABLE IF NOT EXISTS tblLog ( " +
+                    "id            INTEGER PRIMARY KEY AUTOINCREMENT," +  
+                   // "                          UNIQUE" + 
+                   // "                          NOT NULL," + 
+                    "deviceId      INTEGER (4)," + 
+                    "deviceStatus  INTEGER (1)," + 
+                    "deviceVoltage CHAR (4)," + 
+                    "stationId     INTEGER (4)," +
+                    "signalVal     INTEGER (1)," + 
+                    "stepSum       INTEGER (4)," +
+                    "date          DATE," +
+                    "time          TIME," +
+                    "version       INTEGER (4)," + 
+                    "frameSn       INTEGER (1)" + 
+                ")";
+                _sqldb.ExecuteNonQuery(sql);
+
+                sql = "CREATE INDEX IF NOT EXISTS idx ON tblLog ( " +
+                    "deviceId," + 
+                    "stationId," + 
+                    "date" +
+                ")";
+                //_sqldb.ExecuteNonQuery(sql);
             }
         }
 
@@ -48,7 +80,7 @@ namespace BuBuJi_DataAnalysisTool
                         + "'" + epc + "',"
                         + "'" + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + "',"
                         + "'" + 0 + "')";
-            cnt = sqldb.ExecuteNonQuery(sqlText);
+            cnt = _sqldb.ExecuteNonQuery(sqlText);
 
             return (cnt > 0);
         }
@@ -59,7 +91,7 @@ namespace BuBuJi_DataAnalysisTool
             string sqlText;
 
             sqlText = "delete from DocInfo where WebId='" + webId + "' and EPC='" + epc + "'";
-            cnt = sqldb.ExecuteNonQuery(sqlText);
+            cnt = _sqldb.ExecuteNonQuery(sqlText);
 
             return cnt;
         }
@@ -69,7 +101,7 @@ namespace BuBuJi_DataAnalysisTool
             string sqlText;
 
             sqlText = "select * from DocInfo where WebId=" + "'" + IdOrEpc + "'" + " or EPC=" + "'" + IdOrEpc + "'";
-            DataTable tb = sqldb.ExecuteReaderToDataTable(sqlText);
+            DataTable tb = _sqldb.ExecuteReaderToDataTable(sqlText);
 
             return tb;
         }
@@ -80,7 +112,7 @@ namespace BuBuJi_DataAnalysisTool
             string sqlText;
 
             sqlText = "select WebId from DocInfo where WebId=" + "'" + webId + "'";
-            SQLiteDataReader reader = sqldb.ExecuteReader(sqlText);
+            SQLiteDataReader reader = _sqldb.ExecuteReader(sqlText);
             if (reader.HasRows) rslt = true;
             reader.Close();
 
@@ -93,7 +125,7 @@ namespace BuBuJi_DataAnalysisTool
             string sqlText;
 
             sqlText = "select EPC from DocInfo where EPC=" + "'" + epc + "'";
-            SQLiteDataReader reader = sqldb.ExecuteReader(sqlText);
+            SQLiteDataReader reader = _sqldb.ExecuteReader(sqlText);
             if (reader.HasRows) rslt = true;
             reader.Close();
 
@@ -143,5 +175,22 @@ namespace BuBuJi_DataAnalysisTool
             dgvLog.FirstDisplayedScrollingRowIndex = dgvLog.Rows.Count - 1;
         }
         #endregion
+
+        #region 导入日志文件
+        private void btImport_Click(object sender, EventArgs e)
+        {
+ 
+        }
+        #endregion
+
+        private void btQuery_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btClearAll_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
