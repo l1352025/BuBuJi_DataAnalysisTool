@@ -13,6 +13,7 @@ namespace BuBuJi_DataAnalysisTool
         /// 连接字符串
         /// </summary>
         private static string _connectionString;
+        public string ConnectionString{ get {return _connectionString;} }
 
         /// <summary>
         /// 构造函数

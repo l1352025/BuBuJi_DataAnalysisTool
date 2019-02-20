@@ -37,7 +37,10 @@ namespace BuBuJi_DataAnalysisTool
         private Thread _thrUpdateUI;
         private ConcurrentQueue<UiMsg> _uiMsgQueue;
         private Stack<UiMsg> _uiMsgPool;
-        private int _msgPoolSize = 1000;
+        private const int _msgPoolSize = 20000;
+        private const int _pageSize = 1000;
+        private int _currPage;
+        private int _resultCnt;
 
         public FormMain()
         {
@@ -101,11 +104,11 @@ namespace BuBuJi_DataAnalysisTool
         }
         private void UpdateResultCnt(int cnt)
         {
-            int pageCnt = (cnt + 999) / 1000;
+            int pageCnt = (cnt + _pageSize - 1) / _pageSize;
 
             UiMsg uiMsg = _uiMsgPool.Pop();
             uiMsg.Ctrl = lbResultCnt;
-            uiMsg.Msg = "当前结果：总数 " + cnt + " 条，共 " + pageCnt + " 页";
+            uiMsg.Msg = "当前结果： " + cnt + " 行， " + pageCnt + " 页";
             _uiMsgQueue.Enqueue(uiMsg);
 
             uiMsg = _uiMsgPool.Pop();
@@ -118,6 +121,13 @@ namespace BuBuJi_DataAnalysisTool
             UiMsg uiMsg = _uiMsgPool.Pop();
             uiMsg.Ctrl = txtCurrPage;
             uiMsg.Msg = pageNum.ToString();
+            _uiMsgQueue.Enqueue(uiMsg);
+        }
+        private void UpdateDataTbl(object[] objs)
+        {
+            UiMsg uiMsg = _uiMsgPool.Pop();
+            uiMsg.Ctrl = dgvLog;
+            uiMsg.Param = objs.Clone();
             _uiMsgQueue.Enqueue(uiMsg);
         }
         #endregion
@@ -137,6 +147,11 @@ namespace BuBuJi_DataAnalysisTool
                 rtb.SelectionColor = (Color)uiMsg.Param;
                 rtb.Select(rtb.Text.Length, 0);
                 rtb.ScrollToCaret();
+            }
+            else if (uiMsg.Ctrl is DataGridView)
+            {
+                object[] objs = (object[])uiMsg.Param;
+                AddToDataView(objs);
             }
             else
             {
@@ -191,18 +206,16 @@ namespace BuBuJi_DataAnalysisTool
 
                 string sql = "CREATE TABLE IF NOT EXISTS tblLog ( " +
                     "id            INTEGER PRIMARY KEY AUTOINCREMENT," +  
-                   // "                          UNIQUE" + 
-                   // "                          NOT NULL," + 
-                    "deviceId      INTEGER (4)," + 
-                    "deviceStatus  INTEGER (1)," + 
-                    "deviceVoltage CHAR (4)," + 
-                    "stationId     INTEGER (4)," +
+                    "deviceId      INTEGER (8)," + 
+                    "deviceStatus  INTEGER (1)," +
+                    "deviceVoltage NUMERIC (4)," + 
+                    "stationId     INTEGER (8)," +
                     "signalVal     INTEGER (1)," + 
-                    "stepSum       INTEGER (4)," +
+                    "stepSum       INTEGER (8)," +
                     "date          DATE," +
-                    "time          TIME," +
-                    "version       INTEGER (4)," + 
-                    "frameSn       INTEGER (1)" + 
+                    "datetime      DATETIME," +
+                    "version       INTEGER (1)," + 
+                    "frameSn       INTEGER (1)"  + 
                 ")";
                 _sqldb.ExecuteNonQuery(sql);
 
@@ -215,20 +228,45 @@ namespace BuBuJi_DataAnalysisTool
             }
         }
 
-        private bool SaveDataToDb(string webId, string epc)
+        private bool SaveDataToDb(object[] objs)
         {
             int cnt = 0;
             string sqlText;
 
-            sqlText = "insert into DocInfo values ("
-                        + "NULL,"
-                        + "'" + webId + "',"
-                        + "'" + epc + "',"
-                        + "'" + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + "',"
-                        + "'" + 0 + "')";
+            sqlText = "insert into tblLog values ("
+                + "NULL,"
+                + "'" + objs[0] + "',"
+                + "'" + objs[1] + "',"
+                + "'" + objs[2] + "',"
+                + "'" + objs[3] + "',"
+                + "'" + objs[4] + "',"
+                + "'" + objs[5] + "',"
+                + "'" + ((DateTime)objs[6]).Date + "',"
+                + "'" + objs[6] + "',"
+                + "'" + objs[7] + "',"
+                + "'" + objs[8] + "')";
             cnt = _sqldb.ExecuteNonQuery(sqlText);
 
             return (cnt > 0);
+        }
+
+        private string GetInsertSql(object[] objs)
+        {
+            string sqlText;
+
+            sqlText = "insert into tblLog values ("
+                + "NULL,"
+                + "'" + objs[0] + "',"
+                + "'" + objs[1] + "',"
+                + "'" + objs[2] + "',"
+                + "'" + objs[3] + "',"
+                + "'" + objs[4] + "',"
+                + "'" + objs[5] + "',"
+                + "'" + ((DateTime)objs[6]).Date + "',"
+                + "'" + objs[6] + "',"
+                + "'" + objs[7] + "',"
+                + "'" + objs[8] + "')";
+            return sqlText;
         }
 
         private int DeleteDataByWebIdAndEpc(string webId, string epc)
@@ -306,19 +344,47 @@ namespace BuBuJi_DataAnalysisTool
         }
         #endregion
 
-        #region 存档视图
-        private void AddToDataView(string id, string epc)
+        #region 添加到表格显示
+        private void AddToDataView(object[] objs)
         {
             DataRow row = tbLog.NewRow();
 
-            row["ID"] = id;
-            row["EPC"] = epc;
-            row["导出标志"] = 0;
-            row["存档时间"] = DateTime.Now.ToString("MM/dd HH:mm:ss");
-
+            row.BeginEdit();
+            row[id] = tbLog.Rows.Count + 1;
+            row[设备ID]   = objs[0];
+            row[设备状态] = objs[1];
+            row[设备电压] = objs[2];
+            row[基站ID] = objs[3];
+            row[信号量] = objs[4];
+            row[步数总计] = objs[5];
+            row[时间]   = objs[6];
+            row[版本号] = objs[7];
+            row[帧序号] = objs[8];
+            row.EndEdit();
             tbLog.Rows.Add(row);
-            dgvLog.Rows[dgvLog.Rows.Count - 1].DefaultCellStyle.ForeColor = Color.Olive;
-            dgvLog.FirstDisplayedScrollingRowIndex = dgvLog.Rows.Count - 1;
+            //dgvLog.FirstDisplayedScrollingRowIndex = dgvLog.Rows.Count - 1;
+        }
+
+        private void dgvLog_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.ColumnIndex == 设备状态DataGridViewTextBoxColumn.Index)
+            {
+                byte status = (byte)e.Value;
+                e.Value = (status == 1 ? "正常" : (status == 2 ? "损坏" : "其他"));
+            }
+            else if (e.ColumnIndex == 设备电压DataGridViewTextBoxColumn.Index)
+            {
+                e.CellStyle.Format = "N1";
+            }
+            else if(e.ColumnIndex == 时间DataGridViewTextBoxColumn.Index)
+            {
+                e.CellStyle.Format = "yyyy-MM-dd HH:mm:ss";
+            }
+            else if(e.ColumnIndex == 帧序号DataGridViewTextBoxColumn.Index)
+            {
+                e.CellStyle.Format = "X2";
+            }
+            
         }
         #endregion
 
@@ -327,8 +393,8 @@ namespace BuBuJi_DataAnalysisTool
         {
             string strFileName, strRead;
 
-            openFileDlg.Filter = "*.TXT(文本文件)|*.TXT|*.*(所有文件)|*.*";
-            openFileDlg.DefaultExt = "TXT";
+            openFileDlg.Filter = "*.log(文本文件)|*.log|*.*(所有文件)|*.*";
+            openFileDlg.DefaultExt = "log";
             openFileDlg.FileName = "";
             if (DialogResult.OK != openFileDlg.ShowDialog())
             {
@@ -342,64 +408,114 @@ namespace BuBuJi_DataAnalysisTool
                 return;
             }
 
-            StreamReader sr = new StreamReader(strFileName, Encoding.UTF8);
+            //Thread t = new Thread(new ThreadStart(delegate
+            //{
+                StreamReader sr = new StreamReader(strFileName, Encoding.UTF8);
 
-            String strNo, strDate, strTime;
-            string[] strSplit;
-            byte[] byteArray;
-            int startIndex;
+                int index, len;
+                DateTime timeuse = DateTime.Now;
+                object[] dataFields = new object[9];
 
-            while ((strRead = sr.ReadLine()) != null)
-            {
+                _resultCnt = 0;
+                _currPage = 1;
+
+                if (_sqldb == null) return;
+
+                // 打开数据库、创建事务处理
+                SQLiteConnection con = new SQLiteConnection(_sqldb.ConnectionString);
                 try
                 {
-                    strSplit = strRead.Trim().Split(' ');
-                    if (strSplit.Length < 4)
-                    {
-                        continue;
-                    }
-
-                    DateTime timeCheck;
-
-                    if (strRead.StartsWith("@"))
-                    {
-                        strNo = strSplit[1];
-                        strDate = strSplit[0].Substring(1);
-                        strTime = strSplit[2];
-                        startIndex = 3;
-                    }
-                    else if (strSplit[1].Length == 12)
-                    {
-                        strNo = strSplit[0];
-                        strDate = "";
-                        strTime = strSplit[1];
-                        startIndex = 2;
-                    }
-                    else
-                    {
-                        strNo = strSplit[0];
-                        strDate = strSplit[1];
-                        strTime = strSplit[2];
-                        startIndex = 3;
-                    }
-
-                    timeCheck = DateTime.ParseExact(strTime, "HH:mm:ss.fff", null);
-
-                    byteArray = new byte[strSplit.Length - startIndex];
-                    for (int iLoop = startIndex; iLoop < strSplit.Length; iLoop++)
-                    {
-                        byteArray[iLoop - startIndex] = Convert.ToByte(strSplit[iLoop], 16);
-                    }
-
-                    
+                    con.Open();
                 }
-                catch (Exception ex)
+                catch(Exception)
                 {
-                    ShowMsg("第" + tbLog.Rows.Count.ToString() + "行日志格式错误，" + ex.Message, Color.Red);
-                    break;
+                    ShowMsg("数据库打开失败！\r\n", Color.Red);
+                    return;
                 }
-            }
-            sr.Close();
+                SQLiteTransaction trans = con.BeginTransaction();
+                SQLiteCommand cmd = new SQLiteCommand(con);
+
+                while ((strRead = sr.ReadLine()) != null)
+                {
+                    try
+                    {
+                        index = strRead.IndexOf("\"di\"");
+
+                        if (index < 0) continue;
+
+                        index += 6;
+                        // devId
+                        dataFields[0] = Convert.ToInt64(strRead.Substring(index, 12));
+                        index += 20;
+                        // devStatus
+                        dataFields[1] = Convert.ToByte(strRead.Substring(index, 1));
+                        index += 9;
+                        // devVbat
+                        dataFields[2] = Convert.ToSingle(strRead.Substring(index, 3));
+                        index += 11;
+                        // stationId
+                        dataFields[3] = Convert.ToInt64(strRead.Substring(index, 12));
+                        index += 20;
+                        // signal
+                        len = strRead.IndexOf("\"", index) - index;
+                        dataFields[4] = Convert.ToByte(strRead.Substring(index, len));
+                        index += len + 8;
+                        // steps
+                        len = strRead.IndexOf("\"", index) - index;
+                        dataFields[5] = Convert.ToInt64(strRead.Substring(index, len));
+                        index += len + 8;
+                        // time
+                        dataFields[6] = DateTime.ParseExact(strRead.Substring(index, 23), "yyyy-MM-dd HH:mm:ss,fff", null);
+                        index += 30;
+                        // version
+                        len = strRead.IndexOf("\"", index) - index;
+                        dataFields[7] = Convert.ToByte(strRead.Substring(index, len));
+                        index += len + 8;
+                        // frameSn
+                        len = strRead.IndexOf("\"", index) - index;
+                        dataFields[8] = Convert.ToByte(strRead.Substring(index, len));
+
+                        if(_resultCnt < _pageSize)
+                        {
+                            //AddToDataView(dataFields);
+                            //UpdateDataTbl(dataFields);
+                        }
+
+                        // 提交插入命令
+                        cmd.CommandText = GetInsertSql(dataFields);
+                        cmd.ExecuteNonQuery();
+
+                        _resultCnt++;
+                    }
+                    catch (Exception ex)
+                    {
+                        ShowMsg("第" + tbLog.Rows.Count.ToString() + "行日志格式错误，" + ex.Message, Color.Red);
+                        break;
+                    }
+                }
+                sr.Close();
+                //dgvLog.FirstDisplayedScrollingRowIndex = dgvLog.Rows.Count - 1;
+
+                // 提交事务处理
+                trans.Commit();
+
+                // 查询一页显示
+                cmd.CommandText = "select * from tblLog limit " + _pageSize;
+                SQLiteDataAdapter da = new SQLiteDataAdapter(cmd);
+                da.Fill(tbLog);
+
+                // 关闭数据库
+                con.Close();
+
+                UpdateResultCnt(_resultCnt);
+                UpdateCurrentPage(_currPage);
+
+                TimeSpan tsp = DateTime.Now - timeuse;
+                ShowMsg("导入完成， 用时 " + tsp.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
+
+            //}));
+            //t.Start();
+            
 
         }
         #endregion
@@ -418,7 +534,7 @@ namespace BuBuJi_DataAnalysisTool
         }
         #endregion
 
-        #region 查看 上一页/下一页
+        #region 查看上一页/下一页 、清除当前记录
         private void btPagePrev_Click(object sender, EventArgs e)
         {
 
@@ -428,6 +544,17 @@ namespace BuBuJi_DataAnalysisTool
         {
 
         }
+
+        private void btClearCurrent_Click(object sender, EventArgs e)
+        {
+            tbLog.Clear();
+            rtbMsg.Clear();
+            _resultCnt = 0;
+            _currPage = 0;
+            UpdateResultCnt(_resultCnt);
+            UpdateCurrentPage(_currPage);
+        }
         #endregion
+
     }
 }
