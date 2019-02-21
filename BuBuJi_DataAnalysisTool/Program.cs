@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
@@ -15,7 +16,10 @@ namespace BuBuJi_DataAnalysisTool
         static void Main()
         {
             //在InitializeComponent()之前调用
-            AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
+            //AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
+
+            //从资源里释放出Dll文件
+            RealeseDllToExePath();
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
@@ -23,7 +27,7 @@ namespace BuBuJi_DataAnalysisTool
         }
 
         // 方法1：在"Properties/Resources.resx"里添加dll文件
-        static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
             string dllName = args.Name.Contains(",") ? args.Name.Substring(0, args.Name.IndexOf(',')) : args.Name.Replace(".dll", "");
             dllName = dllName.Replace(".", "_");
@@ -35,6 +39,50 @@ namespace BuBuJi_DataAnalysisTool
             System.Resources.ResourceManager rm = new System.Resources.ResourceManager(rootNamespace + ".Properties.Resources", Assembly.GetExecutingAssembly());
             byte[] bytes = (byte[])rm.GetObject(dllName);
             return Assembly.Load(bytes);
+        }
+
+        // 方法2：在工程和引用里添加dll文件，都设置为不复制到本地，工程的dll生成操作选择“嵌入的资源”
+        private static Assembly CurrentDomain_AssemblyResolve2(object sender, ResolveEventArgs args)
+        {
+            string rootNamespace = Assembly.GetExecutingAssembly().FullName.Split(',')[0];
+            string resourceName = rootNamespace + "." + new AssemblyName(args.Name).Name + ".dll";
+
+            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName))
+            {
+
+                byte[] assemblyData = new byte[stream.Length];
+
+                stream.Read(assemblyData, 0, assemblyData.Length);
+
+                return Assembly.Load(assemblyData);
+
+            }
+
+        }
+
+        // 方法3：在"Properties/Resources.resx"里添加dll文件，然后调用
+        private static void RealeseDllToExePath()
+        {
+            byte[] bytes;
+            FileStream fs;
+            string path = Path.GetDirectoryName(Application.ExecutablePath);
+
+            if (!File.Exists(path + "\\System.Data.SQLite.dll"))
+            {
+                bytes = Properties.Resources.System_Data_SQLite;
+                fs = File.Create(path + "\\System.Data.SQLite.dll");
+                fs.Write(bytes, 0, bytes.Length);
+                fs.Close();
+            }
+            
+            if(! File.Exists(path + "\\SQLite.Interop.dll"))
+            {
+                bytes = Properties.Resources.SQLite_Interop;
+                fs = File.Create(path + "\\SQLite.Interop.dll");
+                fs.Write(bytes, 0, bytes.Length);
+                fs.Close();
+            }
+            
         }
     }
 }
