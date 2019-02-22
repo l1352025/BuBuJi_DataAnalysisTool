@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // 有关程序集的常规信息通过以下
 // 特性集控制。更改这些特性值可修改
 // 与程序集关联的信息。
-[assembly: AssemblyTitle("BuBuJi_DataAnalysisTool")]
+[assembly: AssemblyTitle("无线计步器_数据分析工具")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("上海桑锐电子科技股份有限公司")]
-[assembly: AssemblyProduct("BuBuJi_DataAnalysisTool")]
+[assembly: AssemblyProduct("无线计步器_数据分析工具")]
 [assembly: AssemblyCopyright("Copyright ©  上海桑锐电子科技股份有限公司 2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
