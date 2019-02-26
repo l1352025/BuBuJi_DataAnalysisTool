@@ -54,7 +54,7 @@ namespace BuBuJi_DataAnalysisTool
                     con.Close();
                 }
             }
-            catch (Exception) { throw; }
+            catch (Exception) { return false; }
 
             return true;
         }

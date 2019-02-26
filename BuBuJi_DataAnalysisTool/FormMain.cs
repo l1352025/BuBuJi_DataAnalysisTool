@@ -36,7 +36,7 @@ namespace BuBuJi_DataAnalysisTool
         }
         private Thread _thrUpdateUI;
         private ConcurrentQueue<UiMsg> _uiMsgQueue;
-        private Stack<UiMsg> _uiMsgPool;
+        private Queue<UiMsg> _uiMsgPool;
         private const int _msgPoolSize = 20000;
         private int _pageSize = 1000;
         private int _currPage;
@@ -54,7 +54,7 @@ namespace BuBuJi_DataAnalysisTool
             _thrUpdateUI = new Thread(UiUpdateTask);
             _thrUpdateUI.IsBackground = true;
             _thrUpdateUI.Start();
-            _uiMsgPool = new Stack<UiMsg>(_msgPoolSize);
+            _uiMsgPool = new Queue<UiMsg>(_msgPoolSize);
             
         }
 
@@ -64,7 +64,7 @@ namespace BuBuJi_DataAnalysisTool
             for (int i = 0; i < _msgPoolSize; i++)
             {
                 initMsg = new UiMsg();
-                _uiMsgPool.Push(initMsg);
+                _uiMsgPool.Enqueue(initMsg);
             }
 
             cbxStat.SelectedIndex = 0;
@@ -82,38 +82,39 @@ namespace BuBuJi_DataAnalysisTool
 
             msg = (showTime ? "[" + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.fff") + "]  " : "") + msg;
 
-            UiMsg uiMsg = _uiMsgPool.Pop();
+            UiMsg uiMsg = _uiMsgPool.Dequeue();
             uiMsg.Ctrl = rtbMsg;
-            uiMsg.Msg = msg;
+            uiMsg.Msg = (string)msg.Clone();
             uiMsg.Param = fgColor;
+            
             _uiMsgQueue.Enqueue(uiMsg);
         }
         private void UpdateGrpDates(int cnt)
         {
-            UiMsg uiMsg = _uiMsgPool.Pop();
+            UiMsg uiMsg = _uiMsgPool.Dequeue();
             uiMsg.Ctrl = grpDates;
-            uiMsg.Msg = "日期列表 【" + cnt + "】";
+            uiMsg.Msg = "日期列表【" + cnt + "】";
             _uiMsgQueue.Enqueue(uiMsg);
         }
-        private void UpdateGrpStations(int cnt)
+        private void UpdateGrpStations(int cnt, string date)
         {
-            UiMsg uiMsg = _uiMsgPool.Pop();
+            UiMsg uiMsg = _uiMsgPool.Dequeue();
             uiMsg.Ctrl = grpStations;
-            uiMsg.Msg = "基站列表 【" + cnt + "】";
+            uiMsg.Msg = "基站列表【" + cnt + "】 - " + date;
             _uiMsgQueue.Enqueue(uiMsg);
         }
-        private void UpdateGrpDevices(int cnt)
+        private void UpdateGrpDevices(int cnt, string date)
         {
-            UiMsg uiMsg = _uiMsgPool.Pop();
+            UiMsg uiMsg = _uiMsgPool.Dequeue();
             uiMsg.Ctrl = grpDevices;
-            uiMsg.Msg = "设备列表 【" + cnt + "】";
+            uiMsg.Msg = "设备列表【" + cnt + "】 - " + date;
             _uiMsgQueue.Enqueue(uiMsg);
         }
         private void UpdateRecordCnt(int cnt)
         {
             string strcnt = (cnt < 10000 ? cnt.ToString() : ((float)cnt / 10000).ToString("N1") + "万");
 
-            UiMsg uiMsg = _uiMsgPool.Pop();
+            UiMsg uiMsg = _uiMsgPool.Dequeue();
             uiMsg.Ctrl = lbRecordCnt;
             uiMsg.Msg = "记录总数 " + strcnt + " 条";
             _uiMsgQueue.Enqueue(uiMsg);
@@ -123,26 +124,26 @@ namespace BuBuJi_DataAnalysisTool
             _pageSize = (int)updownPagesize.Value;
             _pageCnt = (cnt + _pageSize - 1) / _pageSize;
 
-            UiMsg uiMsg = _uiMsgPool.Pop();
+            UiMsg uiMsg = _uiMsgPool.Dequeue();
             uiMsg.Ctrl = lbResultCnt;
             uiMsg.Msg = "当前结果： " + cnt + " 条  " + _pageCnt + " 页";
             _uiMsgQueue.Enqueue(uiMsg);
 
-            uiMsg = _uiMsgPool.Pop();
+            uiMsg = _uiMsgPool.Dequeue();
             uiMsg.Ctrl = lbPageCnt;
             uiMsg.Msg = "/ " + _pageCnt;
             _uiMsgQueue.Enqueue(uiMsg);
         }
         private void UpdateCurrentPage(int pageNum)
         {
-            UiMsg uiMsg = _uiMsgPool.Pop();
+            UiMsg uiMsg = _uiMsgPool.Dequeue();
             uiMsg.Ctrl = txtCurrPage;
             uiMsg.Msg = pageNum.ToString();
             _uiMsgQueue.Enqueue(uiMsg);
         }
         private void UpdateDataTbl(object[] objs)
         {
-            UiMsg uiMsg = _uiMsgPool.Pop();
+            UiMsg uiMsg = _uiMsgPool.Dequeue();
             uiMsg.Ctrl = dgvLog;
             uiMsg.Param = objs.Clone();
             _uiMsgQueue.Enqueue(uiMsg);
@@ -175,7 +176,7 @@ namespace BuBuJi_DataAnalysisTool
                 uiMsg.Ctrl.Text = uiMsg.Msg;
             }
 
-            _uiMsgPool.Push(uiMsg);
+            _uiMsgPool.Enqueue(uiMsg);
         }
 
         // UI更新线程
@@ -190,7 +191,7 @@ namespace BuBuJi_DataAnalysisTool
                     Invoke(new UiUpdateInvoke(UiUpdate), uiMsg);
                 }
 
-                Thread.Sleep(10);
+                Thread.Sleep(50);
             }
         }
 
@@ -234,12 +235,13 @@ namespace BuBuJi_DataAnalysisTool
         #region 数据库操作：创建、插入、查询
         private void InitialDb()
         {
-            string dbName = "AppData\\bubujiData.db";
+            string dbName = Path.GetDirectoryName(Application.ExecutablePath) + "\\database.db";
 
             if (_sqldb == null)
             {
                 _sqldb = new SQLiteHelper("provider=System.Data.SQLite; data source=" + dbName);
-                _sqldb.CreateDb(dbName);
+
+                if (_sqldb.CreateDb(dbName) == false) return;
 
                 string sql = "CREATE TABLE IF NOT EXISTS tblLog ( " +
                     "id            INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -250,20 +252,55 @@ namespace BuBuJi_DataAnalysisTool
                     "signalVal     INTEGER (1)," +
                     "stepSum       INTEGER (8)," +
                     "date          DATETIME   ," +
-                    "datetime      DATETIME," +
+                    "datetime      DATETIME   ," +
                     "version       INTEGER (1)," +
                     "frameSn       INTEGER (1)" + 
                 ")";
                 _sqldb.ExecuteNonQuery(sql);
 
+#if true
                 sql = "CREATE INDEX IF NOT EXISTS idx ON tblLog ( " +
                     "deviceId," + 
                     "stationId," + 
-                    "date," +
                     "frameSn," +
-                    "deviceVoltage" +
+                    "stepSum," +
+                    "date," +
+                    "datetime" + 
                 ")";
                 _sqldb.ExecuteNonQuery(sql);
+#endif 
+
+#if false
+                sql = "CREATE INDEX IF NOT EXISTS idx_devid ON tblLog ( " +
+                    "deviceId" +
+                ")";
+                _sqldb.ExecuteNonQuery(sql);
+
+                sql = "CREATE INDEX IF NOT EXISTS idx_staid ON tblLog ( " +
+                    "stationId" +
+                ")";
+                _sqldb.ExecuteNonQuery(sql);
+
+                sql = "CREATE INDEX IF NOT EXISTS idx_fsn ON tblLog ( " +
+                    "frameSn" +
+                ")";
+                _sqldb.ExecuteNonQuery(sql);
+
+                sql = "CREATE INDEX IF NOT EXISTS idx_date ON tblLog ( " +
+                    "date" +
+                ")";
+                _sqldb.ExecuteNonQuery(sql);
+
+                sql = "CREATE INDEX IF NOT EXISTS idx_time ON tblLog ( " +
+                    "datetime" +
+                ")";
+                _sqldb.ExecuteNonQuery(sql);
+
+                sql = "CREATE INDEX IF NOT EXISTS idx_step ON tblLog ( " +
+                    "stepSum" +
+                ")";
+                _sqldb.ExecuteNonQuery(sql);
+#endif
             }
         }
 
@@ -312,18 +349,10 @@ namespace BuBuJi_DataAnalysisTool
         {
             string sqlText;
 
-            sqlText = "select * from tblLog where "
+            sqlText = "select id from tblLog where "
                 + "deviceId = '" + fileds[1] + "' and "
                 + "stationId = '" + fileds[4] + "' and "
-                + "stepSum = '" + fileds[6] + "' and "
-                + "date = '" + fileds[7] + "' and "
-                + "frameSn = '" + fileds[10] + "' and "
-
-                +"deviceStatus = '" + fileds[2] + "' and "
-                + "deviceVoltage = '" + fileds[3] + "' and "
-                + "signalVal = '" + fileds[5] + "' and "
-                + "datetime = '" + fileds[8] + "' and "
-                + "version = '" + fileds[9] + "'";
+                + "datetime = '" + fileds[8] + "'";
                 
             return sqlText;
         }
@@ -403,7 +432,8 @@ namespace BuBuJi_DataAnalysisTool
         #region 导入日志文件
         private void btImport_Click(object sender, EventArgs e)
         {
-            string strFileName, strRead;
+            string strFileName;
+            OpenFileDialog openFileDlg = new OpenFileDialog();
 
             openFileDlg.Filter = "*.log(文本文件)|*.log|*.*(所有文件)|*.*";
             openFileDlg.DefaultExt = "log";
@@ -425,10 +455,10 @@ namespace BuBuJi_DataAnalysisTool
                 StreamReader sr = new StreamReader(strFileName, Encoding.UTF8);
 
                 int index, len, cnt = 0, repeatCnt = 0;
-                string msg = "";
                 DateTime timeStart = DateTime.Now;
-                DateTime timeTemp;
                 object[] dataFields = new object[11];
+                StringBuilder strRead = new StringBuilder();
+                string strReadStr;
 
                 if (_sqldb == null) return;
 
@@ -449,69 +479,118 @@ namespace BuBuJi_DataAnalysisTool
                 dataFields[0] = 0;      // id 列置0 自动生成
                 //ShowMsg("导入中。。。\r\n", Color.Blue, false);
                 rtbMsg.Text = "导入中。。。\r\n";
+                rtbMsg.ForeColor = Color.Blue;
                 rtbMsg.Refresh();
 
-                while ((strRead = sr.ReadLine()) != null)
+                while ((strReadStr = sr.ReadLine()) != null)
                 {
                     try
                     {
-                        index = strRead.IndexOf("\"di\"");
-
+#if true
+                        index = strReadStr.IndexOf("\"di\"");
                         if (index < 0) continue;
+
+                        // id 列自动生成，此处用来统计重复次数
+                        dataFields[0] = repeatCnt;
 
                         index += 6;
                         // devId
-                        dataFields[1] = Convert.ToInt64(strRead.Substring(index, 12));
+                        dataFields[1] = strReadStr.Substring(index, 12);
                         index += 20;
                         // devStatus
-                        dataFields[2] = Convert.ToByte(strRead.Substring(index, 1));
+                        dataFields[2] = strReadStr.Substring(index, 1);
                         index += 9;
                         // devVbat
-                        dataFields[3] = Convert.ToSingle(strRead.Substring(index, 3));
+                        dataFields[3] = strReadStr.Substring(index, 3);
                         index += 11;
                         // stationId
-                        dataFields[4] = Convert.ToInt64(strRead.Substring(index, 12));
+                        dataFields[4] = strReadStr.Substring(index, 12);
                         index += 20;
                         // signal
-                        len = strRead.IndexOf("\"", index) - index;
-                        dataFields[5] = Convert.ToByte(strRead.Substring(index, len));
+                        len = strReadStr.IndexOf("\"", index) - index;
+                        dataFields[5] = strReadStr.Substring(index, len);
                         index += len + 8;
                         // steps
-                        len = strRead.IndexOf("\"", index) - index;
-                        dataFields[6] = Convert.ToInt64(strRead.Substring(index, len));
+                        len = strReadStr.IndexOf("\"", index) - index;
+                        dataFields[6] = strReadStr.Substring(index, len);
                         index += len + 8;
                         // date
-                        timeTemp = DateTime.ParseExact(strRead.Substring(index, 23), "yyyy-MM-dd HH:mm:ss,fff", null);
-                        dataFields[7] = timeTemp.Date.ToString("yyyy-MM-dd");
+                        dataFields[7] = strReadStr.Substring(index, 10);
                         // time
-                        dataFields[8] = timeTemp.ToString("yyyy-MM-dd HH:mm:ss");
+                        dataFields[8] = strReadStr.Substring(index, 19);
                         index += 30;
                         // version
-                        len = strRead.IndexOf("\"", index) - index;
-                        dataFields[9] = Convert.ToByte(strRead.Substring(index, len));
+                        len = strReadStr.IndexOf("\"", index) - index;
+                        dataFields[9] = strReadStr.Substring(index, len);
                         index += len + 8;
                         // frameSn
-                        len = strRead.IndexOf("\"", index) - index;
-                        dataFields[10] = Convert.ToByte(strRead.Substring(index, len));
+                        len = strReadStr.IndexOf("\"", index) - index;
+                        dataFields[10] = strReadStr.Substring(index, len);
+#endif
 
+#if fa
+                        index = strReadStr.IndexOf("\"di\"");
+                        if (index < 0) continue;
 
+                        strRead.Clear();
+                        strRead.Append(strReadStr);
+
+                        // id 列自动生成，此处用来统计重复次数
+                        dataFields[0] = repeatCnt;
+
+                        index += 6;
+                        // devId
+                        dataFields[1] = strRead.ToString(index, 12);
+                        index += 20;
+                        // devStatus
+                        dataFields[2] = strRead.ToString(index, 1);
+                        index += 9;
+                        // devVbat
+                        dataFields[3] = strRead.ToString(index, 3);
+                        index += 11;
+                        // stationId
+                        dataFields[4] = strRead.ToString(index, 12);
+                        index += 20;
+                        // signal
+                        len = strReadStr.IndexOf("\"", index) - index;
+                        dataFields[5] = strRead.ToString(index, len);
+                        index += len + 8;
+                        // steps
+                        len = strReadStr.IndexOf("\"", index) - index;
+                        dataFields[6] = strRead.ToString(index, len);
+                        index += len + 8;
+                        // date
+                        dataFields[7] = strRead.ToString(index, 10);
+                        // time
+                        dataFields[8] = strRead.ToString(index, 19);
+                        index += 30;
+                        // version
+                        len = strReadStr.IndexOf("\"", index) - index;
+                        dataFields[9] = strRead.ToString(index, len);
+                        index += len + 8;
+                        // frameSn
+                        len = strReadStr.IndexOf("\"", index) - index;
+                        dataFields[10] = strRead.ToString(index, len);
+#endif
+
+#if true
                         // 重复数据检查 , 只检查第一条
                         cmd.CommandText = GetSelectSqlText(dataFields);
                         if (cmd.ExecuteScalar() != null)
                         {
                             repeatCnt++;
-                            StringBuilder strbd = new StringBuilder();
+                            strRead.Clear();
                             foreach(object obj in dataFields)
                             {
-                                strbd.Append(" " + obj);
+                                strRead.Append(" " + obj);
                             }
-                            strbd.AppendLine();
+                            strRead.AppendLine();
 
                             ShowMsg("在导入第 " + (cnt + 1) + " 条记录时终止：数据库中已存在！\r\n" +
-                                "详情参考：" + strbd.ToString() + "\r\n", Color.Red, false);
+                                "重复记录：" + strRead.ToString() + "\r\n", Color.Red, false);
                             continue;
                         }
-
+#endif
                         // 提交插入命令
                         cmd.CommandText = GetInsertSqlText(dataFields);
                         cmd.ExecuteNonQuery();
@@ -542,7 +621,7 @@ namespace BuBuJi_DataAnalysisTool
                 ShowMsg((repeatCnt == 0 ? "" : "排除重复记录 " + repeatCnt + " 条\r\n"), Color.Red, false);
 
             //}));
-            //t.IsBackground = true;
+            //t.IsBackground = false;
             //t.Start();
 
 
@@ -577,7 +656,7 @@ namespace BuBuJi_DataAnalysisTool
             try
             {
                 if(chkDate.Checked && txtDate.Text != "") 
-                    date = "date = '" + DateTime.Parse(txtDate.Text) + "' and ";
+                    date = "date = '" + DateTime.Parse(txtDate.Text).ToString("yyyy-MM-dd") + "' and ";
                 if(chkDeviceId.Checked && txtDeviceId.Text != "")
                     devid = "deviceId = '" + Convert.ToInt64(txtDeviceId.Text) + "' and ";
                 if(chkStationId.Checked && txtStationId.Text != "")
@@ -641,14 +720,27 @@ namespace BuBuJi_DataAnalysisTool
                 + (ver != "" ? ver : "");
             conditon = (conditon.EndsWith("and ") ? conditon.Substring(0, conditon.Length - 4) : "");
 
-            conditon += (chkRemoveRepeat.Checked ? " group by deviceId, frameSn, date, stepSum" : "") 
-                + " order by deviceId, datetime asc";
+            if (chkRmSameDev.Checked)
+            {
+                conditon += " group by deviceId";
+            }
+            else if (chkRmSameReport.Checked)
+            {
+                conditon += " group by deviceId, frameSn, date, stepSum";
+            }
+            else
+            {
+                conditon += "";
+            }
+
+            conditon += " order by deviceId, datetime asc";
 
             return conditon;
         }
         private void btQuery_Click(object sender, EventArgs e)
         {
             string sqlText = "";
+            DateTime timeStart = DateTime.Now;
 
             // 查询条件设置
             if((sqlText = GetQueryCondition()) == "error")
@@ -667,6 +759,9 @@ namespace BuBuJi_DataAnalysisTool
             // 查询第1页显示
             _currPage = 0;
             QuerySpecifyPage(_currPage + 1);
+
+            ShowMsg("查询完成！ 用时 " +
+                    (DateTime.Now - timeStart).TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
         }
         #endregion
 
@@ -677,6 +772,13 @@ namespace BuBuJi_DataAnalysisTool
         {
             string sqlText = "";
             SQLiteDataReader reader;
+            string whereDate = "";
+            DateTime date = DateTime.Now;
+
+            if(chkDate.Checked && DateTime.TryParse(txtDate.Text, out date))
+            {
+                whereDate = " where date = '" + date.ToString("yyyy-MM-dd") + "' ";
+            }
 
             // 查询总数
             sqlText = "select count(id) from tblLog";
@@ -685,7 +787,7 @@ namespace BuBuJi_DataAnalysisTool
             UpdateRecordCnt(_recordCnt);
 
             // 查询日期列表
-            sqlText = (chkRemoveRepeat.Checked ?
+            sqlText = (chkRmSameReport.Checked ?
                 "( select date from tblLog group by deviceId, frameSn, date, stepSum )" : "tblLog");
             sqlText = "Select date, count(*)" + 
                 " From " + sqlText +
@@ -706,7 +808,7 @@ namespace BuBuJi_DataAnalysisTool
 
             // 查询基站列表
             sqlText = "Select stationId,count(t.stationId)" +
-                " From ( select stationId,deviceId from tblLog group by stationId, deviceId ) as t" +
+                " From ( select stationId,deviceId from tblLog " + whereDate + "group by stationId, deviceId ) as t" +
                 " group by stationId";
             reader = _sqldb.ExecuteReader(sqlText);
             tbStations.Clear();
@@ -723,7 +825,7 @@ namespace BuBuJi_DataAnalysisTool
 
             // 查询设备列表
             sqlText = "Select deviceId, count(*)" +
-                " From ( select deviceId, frameSn from tblLog group by deviceId, frameSn, date, stepSum ) as t" +
+                " From ( select deviceId, frameSn from tblLog " + whereDate + "group by deviceId, frameSn, date, stepSum ) as t" +
                 " group by deviceId";
             reader = _sqldb.ExecuteReader(sqlText);
             tbDevices.Clear();
@@ -739,9 +841,10 @@ namespace BuBuJi_DataAnalysisTool
             }
             reader.Close();
 
+            whereDate = (whereDate != "" ? "" + date.ToString("yyyy-MM-dd") : "所有");
             UpdateGrpDates(tbDates.Rows.Count);
-            UpdateGrpStations(tbStations.Rows.Count);
-            UpdateGrpDevices(tbDevices.Rows.Count);
+            UpdateGrpStations(tbStations.Rows.Count, whereDate);
+            UpdateGrpDevices(tbDevices.Rows.Count, whereDate);
         }
 
         // 统计按钮单击
@@ -769,6 +872,8 @@ namespace BuBuJi_DataAnalysisTool
             StreamWriter writer = new StreamWriter(fstream);
             StringBuilder strBuilder = new StringBuilder(1024);
 
+            int dateIdx = 0xFF;
+
             // 表头
             if (tb.Rows.Count > 0)
             {
@@ -776,6 +881,7 @@ namespace BuBuJi_DataAnalysisTool
 
                 for (int i = 0; i < tb.Columns.Count; i++)
                 {
+                    if(tb.Columns[i].ColumnName == "日期") dateIdx = i;
                     strBuilder.Append(tb.Columns[i].ColumnName + "  ");
                 }
                 strBuilder.Remove(strBuilder.Length - 2, 2);
@@ -791,7 +897,7 @@ namespace BuBuJi_DataAnalysisTool
 
                 for (int i = 0; i < tb.Columns.Count; i++)
                 {
-                    strBuilder.Append(dr[i] + "  ");
+                    strBuilder.Append( (i == dateIdx ? ((DateTime)dr[i]).ToString("yyyy-MM-dd"): dr[i]) + "  ");
                 }
                 strBuilder.Remove(strBuilder.Length - 2, 2);
 ;
@@ -881,7 +987,7 @@ namespace BuBuJi_DataAnalysisTool
         }
         #endregion
 
-        #region 查看上一页/下一页 、清除当前记录
+        #region 查看上一页/下一页 、跳到指定页、清除当前记录
 
         // 查询 上一页
         private void btPagePrev_Click(object sender, EventArgs e)
@@ -897,23 +1003,43 @@ namespace BuBuJi_DataAnalysisTool
 
             QuerySpecifyPage(_currPage + 1);
         }
+        // 跳转到指定页
+        private void txtCurrPage_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if("0123456789\r\b".IndexOf(e.KeyChar) < 0)
+            {
+                e.Handled = true;
+            }
+
+            if(e.KeyChar == '\r' && txtCurrPage.Text != "")
+            {
+                int pageNum = Convert.ToInt32(txtCurrPage.Text);
+                if(pageNum > _pageCnt || pageNum == 0)
+                {
+                    ShowMsg("请输入正确的页序号：最小为1，最大为" + _pageCnt + "\r\n", Color.Red);
+                    txtCurrPage.Text = _currPage.ToString();
+                    return;
+                }
+                QuerySpecifyPage(pageNum);
+            }
+        }
 
         // 查询第 N 页显示
         private void QuerySpecifyPage(int pageNum)
         {
             string sqlText = "";
-            int cnt = (pageNum - 1) * _pageSize;
+            int rsltOffset = (pageNum - 1) * _pageSize;
 
-            sqlText = "select * from tblLog" + _currSelCondition + " limit " + _pageSize + " offset " + (pageNum - 1) * _pageSize;
+            sqlText = "select * from tblLog" + _currSelCondition + " limit " + _pageSize + " offset " + rsltOffset;
             SQLiteDataReader reader = _sqldb.ExecuteReader(sqlText);
             tbLog.Clear();
             tbLog.BeginLoadData();
             while (reader.Read())
             {
-                cnt++;
+                rsltOffset++;
                 DataRow row = tbLog.NewRow();
                 row.BeginEdit();
-                row[id] = cnt;
+                row["序号"] = rsltOffset;
                 row[设备ID] = reader.GetInt64(1);
                 row[设备状态] = reader.GetByte(2);
                 row[设备电压] = reader.GetFloat(3);
@@ -961,6 +1087,7 @@ namespace BuBuJi_DataAnalysisTool
             tbDevices.Clear();
             tbStations.Clear();
             tbLog.Clear();
+            rtbMsg.Clear();
 
             string sql = "delete from tblLog";
             _sqldb.ExecuteNonQuery(sql);
@@ -976,5 +1103,103 @@ namespace BuBuJi_DataAnalysisTool
         }
         #endregion
 
+        #region 导出查询结果、选择设备id/基站id/日期
+
+        private void cMenuLog_ItemClicked(object sender, EventArgs e)
+        {
+            switch (((ToolStripMenuItem)sender).Text)
+            {
+                case "导出本页":
+                    {
+                        if (tbLog.Rows.Count == 0) return;
+
+                        // 选择文件位置
+                        SaveFileDialog savefileDlg = new SaveFileDialog();
+                        savefileDlg.Filter = "*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
+                        savefileDlg.DefaultExt = ".txt";
+                        savefileDlg.FileName = "XX查询结果-第" + _currPage + "页";
+
+                        if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
+
+                        // 导出
+                        DataTableToFile(tbLog, savefileDlg.FileName);
+
+                        ShowMsg("导出 当前结果-第" + _currPage + "页 完成！\r\n", Color.Green, false);
+                    }
+                    break;
+
+                case "导出所有":
+                    {
+                        if (tbLog.Rows.Count == 0) return;
+
+                        string sqlText = "select * from tblLog" + _currSelCondition;
+                        SQLiteDataReader reader = _sqldb.ExecuteReader(sqlText);
+                        DataTable tb = tbLog.Clone();
+                        tb.BeginLoadData();
+                        while (reader.Read())
+                        {
+                            DataRow row = tb.NewRow();
+                            row.BeginEdit();
+                            row["序号"] = tb.Rows.Count + 1;
+                            row["设备ID"] = reader.GetInt64(1);
+                            row["设备状态"] = reader.GetByte(2);
+                            row["设备电压"] = reader.GetFloat(3);
+                            row["基站ID"] = reader.GetInt64(4);
+                            row["信号量"] = reader.GetByte(5);
+                            row["步数总计"] = reader.GetInt64(6);
+                            row["日期"] = reader.GetDateTime(7);
+                            row["时间"] = reader.GetDateTime(8);
+                            row["版本号"] = reader.GetByte(9);
+                            row["帧序号"] = reader.GetByte(10);
+                            row.EndEdit();
+                            tb.Rows.Add(row);
+                        }
+                        tb.EndLoadData();
+                        reader.Close();
+
+                        // 选择文件位置
+                        SaveFileDialog savefileDlg = new SaveFileDialog();
+                        savefileDlg.Filter = "*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
+                        savefileDlg.DefaultExt = ".txt";
+                        savefileDlg.FileName = "XX查询结果-共" + _resultCnt + "条";
+
+                        if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
+
+                        // 导出
+                        DataTableToFile(tb, savefileDlg.FileName);
+
+                        ShowMsg("导出 当前结果-所有记录 完成！\r\n", Color.Green, false);
+                    }
+                    break;
+
+                case "选择当前行-设备ID":
+                    {
+                        if (dgvLog.SelectedRows[0].Index < 0) return;
+
+                        txtDeviceId.Text = dgvLog.Rows[dgvLog.SelectedRows[0].Index].Cells[1].Value.ToString();
+                    }
+                    break;
+
+                case "选择当前行-基站ID":
+                    {
+                        if (dgvLog.SelectedRows[0].Index < 0) return;
+
+                        txtStationId.Text = dgvLog.Rows[dgvLog.SelectedRows[0].Index].Cells[4].Value.ToString();
+                    }
+                    break;
+
+                case "选择当前行-日期":
+                    {
+                        if (dgvLog.SelectedRows[0].Index < 0) return;
+
+                        txtDate.Text = Convert.ToDateTime(dgvLog.Rows[dgvLog.SelectedRows[0].Index].Cells[7].Value).ToString("yyyy-MM-dd");
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+        }
+        #endregion
     }
 }

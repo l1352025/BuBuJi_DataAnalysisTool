@@ -59,25 +59,5 @@ namespace BuBuJi_DataAnalysisTool.Properties {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   查找 System.Byte[] 类型的本地化资源。
-        /// </summary>
-        internal static byte[] SQLite_Interop {
-            get {
-                object obj = ResourceManager.GetObject("SQLite_Interop", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   查找 System.Byte[] 类型的本地化资源。
-        /// </summary>
-        internal static byte[] System_Data_SQLite {
-            get {
-                object obj = ResourceManager.GetObject("System_Data_SQLite", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
     }
 }

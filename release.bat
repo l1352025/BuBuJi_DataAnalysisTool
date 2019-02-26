@@ -12,9 +12,12 @@ set dstPath=G:\release\%objName%
 
 rem :::::::::::::  拷贝发布文件  ::::::::::::::
 
-del /q /f %dstPath%\%objName%\* 
+rmdir /s /q  %dstPath%\%objName%
 
 xcopy  %srcPath%\%projName%\bin\Release\%projName%.exe  %dstPath%\%objName%\ /y /d
+xcopy  %srcPath%\%projName%\bin\Release\System.Data.SQLite.dll  %dstPath%\%objName%\ /y /d
+xcopy  %srcPath%\%projName%\bin\Release\x86\*  %dstPath%\%objName%\x86\ /y /d 
+xcopy  %srcPath%\%projName%\bin\Release\x64\*  %dstPath%\%objName%\x64\ /y /d 
 
 rem :::::::::::::  打包发布文件  ::::::::::::::
 
@@ -23,7 +26,8 @@ set execName=%%~nxi
 goto pack
 )
 :pack
-	move %dstPath%\%objName%\%objName%.exe %dstPath%\%objName%\%execName%.exe 
+	move %dstPath%\%objName%\%projName%.exe %dstPath%\%objName%\%execName%.exe 
+	if exist %dstPath%\%execName%.rar del %dstPath%\%execName%.rar
 	rar a -ep1 %dstPath%\%execName%.rar %dstPath%\%objName%
 
 
