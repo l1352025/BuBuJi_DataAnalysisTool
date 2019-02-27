@@ -89,29 +89,35 @@ namespace BuBuJi_DataAnalysisTool
             try
             {
                 fileName = path + "\\System.Data.SQLite.dll";
-                if (!File.Exists(fileName)) throw new Exception();
+                if (!File.Exists(fileName)) throw new Exception("not exist");
 
                 if (Environment.Is64BitOperatingSystem)
                 {
                     fileName = path + "\\x64\\msvcr100.dll";
+                    if (!File.Exists(fileName)) throw new Exception("not exist");
                     File.Copy(fileName, path + "\\msvcr100.dll", true);
 
                     fileName = path + "\\x64\\SQLite.Interop.dll";
-                    if (!File.Exists(fileName)) throw new Exception();
+                    if (!File.Exists(fileName)) throw new Exception("not exist");
                 }
                 else
                 {
                     fileName = path + "\\x86\\msvcr100.dll";
+                    if (!File.Exists(fileName)) throw new Exception("not exist");
                     File.Copy(fileName, path + "\\msvcr100.dll", true);
 
                     fileName = path + "\\x86\\SQLite.Interop.dll";
-                    if (!File.Exists(fileName)) throw new Exception();
+                    if (!File.Exists(fileName)) throw new Exception("not exist");
                 }
             }
-            catch(Exception)
+            catch(Exception e)
             {
-                MessageBox.Show("找不到文件 " + fileName, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Application.Exit();
+                if (e.Message == "not exist")
+                {
+                    MessageBox.Show("找不到文件 " + fileName, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                    Application.Exit();
+                }
             }
         }
     }

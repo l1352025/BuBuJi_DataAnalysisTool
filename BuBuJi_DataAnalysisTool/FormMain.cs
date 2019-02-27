@@ -254,7 +254,8 @@ namespace BuBuJi_DataAnalysisTool
                     "date          DATETIME   ," +
                     "datetime      DATETIME   ," +
                     "version       INTEGER (1)," +
-                    "frameSn       INTEGER (1)" + 
+                    "frameSn       INTEGER (1)," +
+                    "isRepeatRpt   INTEGER (1)" + 
                 ")";
                 _sqldb.ExecuteNonQuery(sql);
 
@@ -304,28 +305,6 @@ namespace BuBuJi_DataAnalysisTool
             }
         }
 
-        private bool SaveDataToDb(object[] fileds)
-        {
-            int cnt = 0;
-            string sqlText;
-
-            sqlText = "insert into tblLog values ("
-                + "NULL,"   // fileds[0] id列自动生成
-                + "'" + fileds[1] + "',"
-                + "'" + fileds[2] + "',"
-                + "'" + fileds[3] + "',"
-                + "'" + fileds[4] + "',"
-                + "'" + fileds[5] + "',"
-                + "'" + fileds[6] + "',"
-                + "'" + fileds[7] + "',"
-                + "'" + fileds[8] + "',"
-                + "'" + fileds[9] + "',"
-                + "'" + fileds[10] + "')";
-            cnt = _sqldb.ExecuteNonQuery(sqlText);
-
-            return (cnt > 0);
-        }
-
         private string GetInsertSqlText(object[] fileds)
         {
             string sqlText;
@@ -341,19 +320,8 @@ namespace BuBuJi_DataAnalysisTool
                 + "'" + fileds[7] + "',"
                 + "'" + fileds[8] + "',"
                 + "'" + fileds[9] + "',"
-                + "'" + fileds[10] + "')";
-            return sqlText;
-        }
-
-        private string GetSelectSqlText(object[] fileds)
-        {
-            string sqlText;
-
-            sqlText = "select id from tblLog where "
-                + "deviceId = '" + fileds[1] + "' and "
-                + "stationId = '" + fileds[4] + "' and "
-                + "datetime = '" + fileds[8] + "'";
-                
+                + "'" + fileds[10] + "',"
+                + "'" + fileds[11] + "')";
             return sqlText;
         }
 
@@ -446,7 +414,7 @@ namespace BuBuJi_DataAnalysisTool
             strFileName = openFileDlg.FileName;
             if (strFileName.Length == 0)
             {
-                MessageBox.Show("导入失败！\n", "错误", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("导入失败！\r\n", "错误", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -456,7 +424,7 @@ namespace BuBuJi_DataAnalysisTool
 
                 int index, len, cnt = 0, repeatCnt = 0;
                 DateTime timeStart = DateTime.Now;
-                object[] dataFields = new object[11];
+                object[] dataFields = new object[12];
                 StringBuilder strRead = new StringBuilder();
                 string strReadStr;
 
@@ -526,6 +494,9 @@ namespace BuBuJi_DataAnalysisTool
                         // frameSn
                         len = strReadStr.IndexOf("\"", index) - index;
                         dataFields[10] = strReadStr.Substring(index, len);
+
+                        // isRepeatRpt 列，默认0-没有重复
+                        dataFields[11] = 0;
 #endif
 
 #if fa
@@ -571,11 +542,17 @@ namespace BuBuJi_DataAnalysisTool
                         // frameSn
                         len = strReadStr.IndexOf("\"", index) - index;
                         dataFields[10] = strRead.ToString(index, len);
+
+                        // isRepeatRpt 列，默认0-没有重复
+                        dataFields[11] = 0;
 #endif
 
-#if true
-                        // 重复数据检查 , 只检查第一条
-                        cmd.CommandText = GetSelectSqlText(dataFields);
+#if fa
+                        // 重复数据检查
+                        cmd.CommandText = "select id from tblLog where "
+                            + "deviceId = '" + dataFields[1] + "' and "
+                            + "stationId = '" + dataFields[4] + "' and "
+                            + "datetime = '" + dataFields[8] + "'";
                         if (cmd.ExecuteScalar() != null)
                         {
                             repeatCnt++;
@@ -591,6 +568,22 @@ namespace BuBuJi_DataAnalysisTool
                             continue;
                         }
 #endif
+
+#if true
+                        // 重复上报标记设置
+                        DateTime time = Convert.ToDateTime(dataFields[8]);
+                        cmd.CommandText = "select id from tblLog where "
+                            + "deviceId = '" + dataFields[1] + "' and "
+                            + "frameSn = '" + dataFields[10] + "' and "
+                            + "stepSum = '" + dataFields[6] + "' and "
+                            + "datetime between '" + time.AddSeconds(-3).ToString("yyyy-MM-dd HH:mm:ss")
+                            + "' and '" + time.AddSeconds(3).ToString("yyyy-MM-dd HH:mm:ss") + "'";
+                        if (cmd.ExecuteScalar() != null)
+                        {
+                            dataFields[11] = 1;
+                        }
+#endif
+
                         // 提交插入命令
                         cmd.CommandText = GetInsertSqlText(dataFields);
                         cmd.ExecuteNonQuery();
@@ -599,7 +592,7 @@ namespace BuBuJi_DataAnalysisTool
                     }
                     catch (Exception ex)
                     {
-                        ShowMsg("第" + tbLog.Rows.Count.ToString() + "行日志格式错误，" + ex.Message, Color.Red);
+                        ShowMsg("第" + tbLog.Rows.Count.ToString() + "行日志格式错误，" + ex.Message + "\r\n", Color.Red);
                         break;
                     }
                 }
