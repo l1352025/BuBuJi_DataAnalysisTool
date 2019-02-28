@@ -72,6 +72,10 @@ namespace BuBuJi_DataAnalysisTool
             cbxVer.SelectedIndex = 0;
             cbxSteps.SelectedIndex = 1;
 
+            dgvLog.RowsAdded += new DataGridViewRowsAddedEventHandler(dgv_RowsAdded);
+            dgvLog.RowsRemoved += new DataGridViewRowsRemovedEventHandler(dgv_RowsRemoved);
+            dgvLog.TopLeftHeaderCell.Value = "序号";
+
             DataInit();
         }
 
@@ -227,12 +231,12 @@ namespace BuBuJi_DataAnalysisTool
 
             // 查询第1页显示
             _currSelCondition = "";
-            _currPage = 0;
-            QuerySpecifyPage(_currPage + 1);
+            _currPage = 1;
+            QuerySpecifyPage(_currPage);
         }
         #endregion
 
-        #region 数据库操作：创建、插入、查询
+        #region 数据库操作：创建、插入
         private void InitialDb()
         {
             string dbName = Path.GetDirectoryName(Application.ExecutablePath) + "\\database.db";
@@ -353,7 +357,7 @@ namespace BuBuJi_DataAnalysisTool
         }
         #endregion
 
-        #region 添加到表格显示
+        #region 数据表格显示、行号刷新
         private void AddToDataView(object[] objs)
         {
             DataRow row = tbLog.NewRow();
@@ -366,7 +370,7 @@ namespace BuBuJi_DataAnalysisTool
             row[基站ID] = objs[4];
             row[信号量] = objs[5];
             row[步数总计] = objs[6];
-            row[日期] = objs[7]; 
+            //row[日期] = objs[7];  // don't show this col
             row[时间] = objs[8];
             row[版本号] = objs[9];
             row[帧序号] = objs[10];
@@ -393,8 +397,46 @@ namespace BuBuJi_DataAnalysisTool
             {
             //    e.CellStyle.Format = "X2";
             }
-            
         }
+
+        private void dgv_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
+        {
+            int iStart = 0;
+
+            if (sender == dgvLog)
+            {
+                iStart += (_currPage - 1) * _pageSize;
+            }
+
+            for (int i = e.RowIndex; i < ((DataGridView)sender).Rows.Count; )
+            {
+                ((DataGridView)sender).Rows[i].HeaderCell.Value = ( iStart + (++i)).ToString();
+            }
+        }
+        private void dgv_RowsRemoved(object sender, DataGridViewRowsRemovedEventArgs e)
+        {
+            int iStart = 0;
+
+            if (sender == dgvLog)
+            {
+                iStart += (_currPage - 1) * _pageSize;
+            }
+
+            for (int i = e.RowIndex; i < ((DataGridView)sender).Rows.Count; )
+            {
+                ((DataGridView)sender).Rows[i].HeaderCell.Value = (iStart + (++i)).ToString();
+            }
+        }
+
+        private void OnRowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
+        {
+            SolidBrush solidBrush = new SolidBrush(dgvLog.RowHeadersDefaultCellStyle.ForeColor);
+            e.Graphics.DrawString((e.RowIndex + 1).ToString(), 
+                e.InheritedRowStyle.Font, solidBrush, 
+                e.RowBounds.Location.X + 15, 
+                e.RowBounds.Location.Y + 5);
+        }
+        
         #endregion
 
         #region 导入日志文件
@@ -719,7 +761,7 @@ namespace BuBuJi_DataAnalysisTool
             }
             else if (chkRmSameReport.Checked)
             {
-                conditon += " group by deviceId, frameSn, date, stepSum";
+                conditon += (conditon != "" ? " and isRepeatRpt = 0" : " where isRepeatRpt = 0");
             }
             else
             {
@@ -750,11 +792,111 @@ namespace BuBuJi_DataAnalysisTool
             UpdateResultCnt(_resultCnt);
 
             // 查询第1页显示
-            _currPage = 0;
-            QuerySpecifyPage(_currPage + 1);
+            _currPage = 1;
+            QuerySpecifyPage(_currPage);
 
             ShowMsg("查询完成！ 用时 " +
                     (DateTime.Now - timeStart).TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
+        }
+        #endregion
+
+        #region 导出查询结果、选择设备id/基站id/日期
+
+        private void cMenuLog_ItemClicked(object sender, EventArgs e)
+        {
+            switch (((ToolStripMenuItem)sender).Text)
+            {
+                case "导出本页":
+                    {
+                        if (tbLog.Rows.Count == 0) return;
+
+                        // 选择文件位置
+                        SaveFileDialog savefileDlg = new SaveFileDialog();
+                        savefileDlg.Filter = "*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
+                        savefileDlg.DefaultExt = ".txt";
+                        savefileDlg.FileName = "XX查询结果-第" + _currPage + "页";
+
+                        if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
+
+                        // 导出
+                        DataGridViewToFile(dgvLog, savefileDlg.FileName);
+
+                        ShowMsg("导出 当前结果-第" + _currPage + "页 完成！\r\n", Color.Green, false);
+                    }
+                    break;
+
+                case "导出所有":
+                    {
+                        if (tbLog.Rows.Count == 0) return;
+
+                        string sqlText = "select * from tblLog" + _currSelCondition;
+                        SQLiteDataReader reader = _sqldb.ExecuteReader(sqlText);
+
+                        DataTable tb = tbLog.Clone();
+                        tb.BeginLoadData();
+                        while (reader.Read())
+                        {
+                            DataRow row = tb.NewRow();
+                            row.BeginEdit();
+                            row["序号"] = tb.Rows.Count + 1;
+                            row["设备ID"] = reader.GetInt64(1);
+                            row["设备状态"] = reader.GetByte(2);
+                            row["设备电压"] = reader.GetFloat(3);
+                            row["基站ID"] = reader.GetInt64(4);
+                            row["信号量"] = reader.GetByte(5);
+                            row["步数总计"] = reader.GetInt64(6);
+                            //row["日期"] = reader.GetDateTime(7); // data view don't need this col
+                            row["时间"] = reader.GetDateTime(8);
+                            row["版本号"] = reader.GetByte(9);
+                            row["帧序号"] = reader.GetByte(10);
+                            row.EndEdit();
+                            tb.Rows.Add(row);
+                        }
+                        tb.EndLoadData();
+                        reader.Close();
+
+                        // 选择文件位置
+                        SaveFileDialog savefileDlg = new SaveFileDialog();
+                        savefileDlg.Filter = "*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
+                        savefileDlg.DefaultExt = ".txt";
+                        savefileDlg.FileName = "XX查询结果-共" + _resultCnt + "条";
+
+                        if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
+
+                        // 导出
+                        DataTableToFile(tb, savefileDlg.FileName);
+
+                        ShowMsg("导出 当前结果-所有记录 完成！\r\n", Color.Green, false);
+                    }
+                    break;
+
+                case "选择当前行-设备ID":
+                    {
+                        if (dgvLog.SelectedRows[0].Index < 0) return;
+
+                        txtDeviceId.Text = dgvLog.Rows[dgvLog.SelectedRows[0].Index].Cells[1].Value.ToString();
+                    }
+                    break;
+
+                case "选择当前行-基站ID":
+                    {
+                        if (dgvLog.SelectedRows[0].Index < 0) return;
+
+                        txtStationId.Text = dgvLog.Rows[dgvLog.SelectedRows[0].Index].Cells[4].Value.ToString();
+                    }
+                    break;
+
+                case "选择当前行-日期":
+                    {
+                        if (dgvLog.SelectedRows[0].Index < 0) return;
+
+                        txtDate.Text = Convert.ToDateTime(dgvLog.Rows[dgvLog.SelectedRows[0].Index].Cells[7].Value).ToString("yyyy-MM-dd");
+                    }
+                    break;
+
+                default:
+                    break;
+            }
         }
         #endregion
 
@@ -781,10 +923,8 @@ namespace BuBuJi_DataAnalysisTool
 
             // 查询日期列表
             sqlText = (chkRmSameReport.Checked ?
-                "( select date from tblLog group by deviceId, frameSn, date, stepSum )" : "tblLog");
-            sqlText = "Select date, count(*)" + 
-                " From " + sqlText +
-                " group by date";
+                "select date, count(*) from tblLog where isRepeatRpt = 0 group by date" :
+                "select date, count(*) from tblLog group by date");
             reader = _sqldb.ExecuteReader(sqlText);
             tbDates.Clear();
             while (reader.Read())
@@ -800,8 +940,9 @@ namespace BuBuJi_DataAnalysisTool
             reader.Close();
 
             // 查询基站列表
-            sqlText = "Select stationId,count(t.stationId)" +
-                " From ( select stationId,deviceId from tblLog " + whereDate + "group by stationId, deviceId ) as t" +
+            sqlText = "Select stationId, count(t.stationId)" +
+                " From ( select stationId,deviceId from tblLog " 
+                + whereDate + "group by stationId, deviceId ) as t" +
                 " group by stationId";
             reader = _sqldb.ExecuteReader(sqlText);
             tbStations.Clear();
@@ -818,7 +959,8 @@ namespace BuBuJi_DataAnalysisTool
 
             // 查询设备列表
             sqlText = "Select deviceId, count(*)" +
-                " From ( select deviceId, frameSn from tblLog " + whereDate + "group by deviceId, frameSn, date, stepSum ) as t" +
+                " From tblLog "
+                + whereDate + (whereDate != "" ? " and isRepeatRpt = 0 " : " where isRepeatRpt = 0") +
                 " group by deviceId";
             reader = _sqldb.ExecuteReader(sqlText);
             tbDevices.Clear();
@@ -899,6 +1041,48 @@ namespace BuBuJi_DataAnalysisTool
             writer.Flush();
             writer.Close();
         }
+
+        private void DataGridViewToFile(DataGridView dgv, string toSaveName)
+        {
+            FileStream fstream = File.Open(toSaveName, FileMode.Create, FileAccess.Write);
+            StreamWriter writer = new StreamWriter(fstream);
+            StringBuilder strBuilder = new StringBuilder(1024);
+
+            int dateIdx = 0xFF;
+
+            // 表头
+            if (dgv.Rows.Count > 0)
+            {
+                strBuilder.Clear();
+
+                for (int i = 0; i < dgv.Columns.Count; i++)
+                {
+                    if (dgv.Columns[i].HeaderText == "日期") dateIdx = i;
+                    strBuilder.Append(dgv.Columns[i].HeaderText + "  ");
+                }
+                strBuilder.Remove(strBuilder.Length - 2, 2);
+
+                writer.WriteLine(strBuilder.ToString());
+                writer.Flush();
+            }
+
+            // 表行记录
+            foreach (DataGridViewRow dr in dgv.Rows)
+            {
+                strBuilder.Clear();
+                strBuilder.Append(dr.Index + 1 + "  ");
+                for (int i = 1; i < dgv.Columns.Count; i++)
+                {
+                    strBuilder.Append((i == dateIdx ? ((DateTime)dr.Cells[i].Value).ToString("yyyy-MM-dd") :
+                        dr.Cells[i].Value) + "  ");
+                }
+                strBuilder.Remove(strBuilder.Length - 2, 2);
+                ;
+                writer.WriteLine(strBuilder.ToString());
+            }
+            writer.Flush();
+            writer.Close();
+        }
         private void devices导出列表ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (tbDevices.Rows.Count == 0) return;
@@ -913,7 +1097,7 @@ namespace BuBuJi_DataAnalysisTool
             if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
             // 导出
-            DataTableToFile(tbDevices, savefileDlg.FileName);
+            DataGridViewToFile(dgvDevice, savefileDlg.FileName);
 
             ShowMsg("导出设备列表成功！\r\n", Color.Green, false);
         }
@@ -955,7 +1139,7 @@ namespace BuBuJi_DataAnalysisTool
             if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
             // 导出
-            DataTableToFile(tbStations, savefileDlg.FileName);
+            DataGridViewToFile(dgvStation, savefileDlg.FileName);
 
             ShowMsg("导出基站列表成功！\r\n", Color.Green, false);
         }
@@ -974,27 +1158,29 @@ namespace BuBuJi_DataAnalysisTool
             if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
             // 导出
-            DataTableToFile(tbDates, savefileDlg.FileName);
+            DataGridViewToFile(dgvDate, savefileDlg.FileName);
 
             ShowMsg("导出日期列表成功！\r\n", Color.Green, false);
         }
         #endregion
 
-        #region 查看上一页/下一页 、跳到指定页、清除当前记录
+        #region 查看上一页/下一页 、跳到指定页
 
         // 查询 上一页
         private void btPagePrev_Click(object sender, EventArgs e)
         {
             if (_currPage == 1) return;
 
-            QuerySpecifyPage(_currPage - 1);
+            _currPage--;
+            QuerySpecifyPage(_currPage);
         }
         // 查询 下一页
         private void btPageNext_Click(object sender, EventArgs e)
         {
             if (_currPage == _pageCnt) return;
 
-            QuerySpecifyPage(_currPage + 1);
+            _currPage++;
+            QuerySpecifyPage(_currPage);
         }
         // 跳转到指定页
         private void txtCurrPage_KeyPress(object sender, KeyPressEventArgs e)
@@ -1013,7 +1199,8 @@ namespace BuBuJi_DataAnalysisTool
                     txtCurrPage.Text = _currPage.ToString();
                     return;
                 }
-                QuerySpecifyPage(pageNum);
+                _currPage = pageNum;
+                QuerySpecifyPage(_currPage);
             }
         }
 
@@ -1039,7 +1226,7 @@ namespace BuBuJi_DataAnalysisTool
                 row[基站ID] = reader.GetInt64(4);
                 row[信号量] = reader.GetByte(5);
                 row[步数总计] = reader.GetInt64(6);
-                row[日期] = reader.GetDateTime(7);
+                // row[日期] = reader.GetDateTime(7); // data view don't need this col
                 row[时间] = reader.GetDateTime(8);
                 row[版本号] = reader.GetByte(9);
                 row[帧序号] = reader.GetByte(10);
@@ -1048,24 +1235,14 @@ namespace BuBuJi_DataAnalysisTool
             }
             reader.Close();
             tbLog.EndLoadData();
-            _currPage = pageNum;
 
             UpdateCurrentPage(_currPage);
         }
 
-        // 清空当前显示
-        private void btClearCurrent_Click(object sender, EventArgs e)
-        {
-            tbLog.Clear();
-            rtbMsg.Clear();
-            _resultCnt = 0;
-            _currPage = 0;
-            UpdateResultCnt(_resultCnt);
-            UpdateCurrentPage(_currPage);
-        }
         #endregion
 
-        #region 删除数据库
+        #region 删除数据库 、清空当前显示
+        // 删除数据库
         private void btClearAll_Click(object sender, EventArgs e)
         {
             if (_recordCnt <= 0) return;
@@ -1094,105 +1271,33 @@ namespace BuBuJi_DataAnalysisTool
             UpdateResultCnt(_resultCnt);
             UpdateCurrentPage(_currPage);
         }
+        // 清空当前显示
+        private void btClearCurrent_Click(object sender, EventArgs e)
+        {
+            tbLog.Clear();
+            rtbMsg.Clear();
+            _resultCnt = 0;
+            _currPage = 0;
+            UpdateResultCnt(_resultCnt);
+            UpdateCurrentPage(_currPage);
+        }
         #endregion
 
-        #region 导出查询结果、选择设备id/基站id/日期
-
-        private void cMenuLog_ItemClicked(object sender, EventArgs e)
+        private void button1_Click(object sender, EventArgs e)
         {
-            switch (((ToolStripMenuItem)sender).Text)
+            if (dgvLog.SelectedRows.Count == 0) return;
+
+            DataRowView drv;
+
+            foreach(DataGridViewRow dgvRow in dgvLog.SelectedRows)
             {
-                case "导出本页":
-                    {
-                        if (tbLog.Rows.Count == 0) return;
-
-                        // 选择文件位置
-                        SaveFileDialog savefileDlg = new SaveFileDialog();
-                        savefileDlg.Filter = "*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
-                        savefileDlg.DefaultExt = ".txt";
-                        savefileDlg.FileName = "XX查询结果-第" + _currPage + "页";
-
-                        if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
-
-                        // 导出
-                        DataTableToFile(tbLog, savefileDlg.FileName);
-
-                        ShowMsg("导出 当前结果-第" + _currPage + "页 完成！\r\n", Color.Green, false);
-                    }
-                    break;
-
-                case "导出所有":
-                    {
-                        if (tbLog.Rows.Count == 0) return;
-
-                        string sqlText = "select * from tblLog" + _currSelCondition;
-                        SQLiteDataReader reader = _sqldb.ExecuteReader(sqlText);
-                        DataTable tb = tbLog.Clone();
-                        tb.BeginLoadData();
-                        while (reader.Read())
-                        {
-                            DataRow row = tb.NewRow();
-                            row.BeginEdit();
-                            row["序号"] = tb.Rows.Count + 1;
-                            row["设备ID"] = reader.GetInt64(1);
-                            row["设备状态"] = reader.GetByte(2);
-                            row["设备电压"] = reader.GetFloat(3);
-                            row["基站ID"] = reader.GetInt64(4);
-                            row["信号量"] = reader.GetByte(5);
-                            row["步数总计"] = reader.GetInt64(6);
-                            row["日期"] = reader.GetDateTime(7);
-                            row["时间"] = reader.GetDateTime(8);
-                            row["版本号"] = reader.GetByte(9);
-                            row["帧序号"] = reader.GetByte(10);
-                            row.EndEdit();
-                            tb.Rows.Add(row);
-                        }
-                        tb.EndLoadData();
-                        reader.Close();
-
-                        // 选择文件位置
-                        SaveFileDialog savefileDlg = new SaveFileDialog();
-                        savefileDlg.Filter = "*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
-                        savefileDlg.DefaultExt = ".txt";
-                        savefileDlg.FileName = "XX查询结果-共" + _resultCnt + "条";
-
-                        if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
-
-                        // 导出
-                        DataTableToFile(tb, savefileDlg.FileName);
-
-                        ShowMsg("导出 当前结果-所有记录 完成！\r\n", Color.Green, false);
-                    }
-                    break;
-
-                case "选择当前行-设备ID":
-                    {
-                        if (dgvLog.SelectedRows[0].Index < 0) return;
-
-                        txtDeviceId.Text = dgvLog.Rows[dgvLog.SelectedRows[0].Index].Cells[1].Value.ToString();
-                    }
-                    break;
-
-                case "选择当前行-基站ID":
-                    {
-                        if (dgvLog.SelectedRows[0].Index < 0) return;
-
-                        txtStationId.Text = dgvLog.Rows[dgvLog.SelectedRows[0].Index].Cells[4].Value.ToString();
-                    }
-                    break;
-
-                case "选择当前行-日期":
-                    {
-                        if (dgvLog.SelectedRows[0].Index < 0) return;
-
-                        txtDate.Text = Convert.ToDateTime(dgvLog.Rows[dgvLog.SelectedRows[0].Index].Cells[7].Value).ToString("yyyy-MM-dd");
-                    }
-                    break;
-
-                default:
-                    break;
+                drv = dgvRow.DataBoundItem as DataRowView;
+                tbLog.Rows.Remove( drv.Row );
             }
         }
+
+        #region 设备档案信息-导入、统计、导出
+
         #endregion
     }
 }

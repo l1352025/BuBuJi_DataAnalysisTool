@@ -65,7 +65,6 @@
             this.基站ID = new System.Data.DataColumn();
             this.信号量 = new System.Data.DataColumn();
             this.步数总计 = new System.Data.DataColumn();
-            this.日期 = new System.Data.DataColumn();
             this.时间 = new System.Data.DataColumn();
             this.版本号 = new System.Data.DataColumn();
             this.帧序号 = new System.Data.DataColumn();
@@ -142,6 +141,7 @@
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.button1 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dgvLog)).BeginInit();
             this.cMenuLogs.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dsLog)).BeginInit();
@@ -211,9 +211,10 @@
             this.dgvLog.Margin = new System.Windows.Forms.Padding(0);
             this.dgvLog.Name = "dgvLog";
             this.dgvLog.ReadOnly = true;
-            this.dgvLog.RowHeadersVisible = false;
-            this.dgvLog.RowHeadersWidth = 60;
+            this.dgvLog.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.Single;
+            this.dgvLog.RowHeadersWidth = 70;
             this.dgvLog.RowTemplate.Height = 23;
+            this.dgvLog.RowTemplate.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             this.dgvLog.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgvLog.Size = new System.Drawing.Size(729, 383);
             this.dgvLog.TabIndex = 0;
@@ -364,7 +365,6 @@
             this.基站ID,
             this.信号量,
             this.步数总计,
-            this.日期,
             this.时间,
             this.版本号,
             this.帧序号});
@@ -405,11 +405,6 @@
             // 
             this.步数总计.ColumnName = "步数总计";
             this.步数总计.DataType = typeof(long);
-            // 
-            // 日期
-            // 
-            this.日期.ColumnName = "日期";
-            this.日期.DataType = typeof(System.DateTime);
             // 
             // 时间
             // 
@@ -1218,11 +1213,22 @@
             this.tabPage2.Text = "设备档案信息";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(806, 475);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 10;
+            this.button1.Text = "button1";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(969, 609);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.rtbMsg);
             this.Controls.Add(this.lbPageCnt);
@@ -1277,7 +1283,6 @@
         private System.Data.DataColumn 基站ID;
         private System.Data.DataColumn 信号量;
         private System.Data.DataColumn 步数总计;
-        private System.Data.DataColumn 日期;
         private System.Data.DataColumn 时间;
         private System.Data.DataColumn 版本号;
         private System.Data.DataColumn 帧序号;
@@ -1370,6 +1375,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn 时间DataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn 版本号DataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn 帧序号DataGridViewTextBoxColumn;
+        private System.Windows.Forms.Button button1;
     }
 }
 
