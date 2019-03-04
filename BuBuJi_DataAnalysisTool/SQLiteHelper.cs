@@ -120,6 +120,34 @@ namespace BuBuJi_DataAnalysisTool
                 }
             }
         }
+        public void ExecuteNonQueryBatch(List<string> sqlTexts)
+        {
+            using (SQLiteConnection con = new SQLiteConnection(_connectionString))
+            {
+                try
+                {
+                    con.Open();
+                }
+                catch (Exception) { throw; }
+
+                using (SQLiteTransaction trans = con.BeginTransaction())
+                {
+                    using (SQLiteCommand cmd = new SQLiteCommand(con))
+                    {
+                        try
+                        {
+                            foreach (var item in sqlTexts)
+                            {
+                                cmd.CommandText = item;
+                                cmd.ExecuteNonQuery();
+                            }
+                            trans.Commit();
+                        }
+                        catch (Exception) { throw; }
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// 执行SQL命令 - 查询

@@ -38,8 +38,25 @@
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle9 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle10 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle11 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle12 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle13 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle14 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle15 = new System.Windows.Forms.DataGridViewCellStyle();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormMain));
             this.dgvLog = new System.Windows.Forms.DataGridView();
+            this.设备IDDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.设备状态DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.设备电压DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.基站IDDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.信号量DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.步数总计DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.时间DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.版本号DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.帧序号DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.cMenuLogs = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.导出本页ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.导出所有ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -73,15 +90,21 @@
             this.btClearAll = new System.Windows.Forms.Button();
             this.grpDevices = new System.Windows.Forms.GroupBox();
             this.dgvDevice = new System.Windows.Forms.DataGridView();
+            this.设备IDDataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dataGridViewTextBoxColumn2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.cMenuDevices = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.devices导出列表ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.devices统计上报次数设备个数ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.grpStations = new System.Windows.Forms.GroupBox();
             this.dgvStation = new System.Windows.Forms.DataGridView();
+            this.基站IDDataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.cMenuStations = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.stations导出列表ToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.grpDates = new System.Windows.Forms.GroupBox();
             this.dgvDate = new System.Windows.Forms.DataGridView();
+            this.日期DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dataGridViewTextBoxColumn3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.cMenuDates = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.dates导出列表ToolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
@@ -118,21 +141,28 @@
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.设备IDDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.设备状态DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.设备电压DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.基站IDDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.信号量DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.步数总计DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.时间DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.版本号DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.帧序号DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.设备IDDataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dataGridViewTextBoxColumn2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.日期DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dataGridViewTextBoxColumn3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.基站IDDataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dgvDoc = new System.Windows.Forms.DataGridView();
+            this.btDocImport = new System.Windows.Forms.Button();
+            this.btDocDelete = new System.Windows.Forms.Button();
+            this.lbCurrDocCnt = new System.Windows.Forms.Label();
+            this.tbDoc = new System.Data.DataTable();
+            this.tblDoc_deviceId = new System.Data.DataColumn();
+            this.tblDoc_AllRptCnt = new System.Data.DataColumn();
+            this.tblDoc_RptDay1 = new System.Data.DataColumn();
+            this.tblDoc_RptDay2 = new System.Data.DataColumn();
+            this.tblDoc_RptDay3 = new System.Data.DataColumn();
+            this.tblDoc_Day4 = new System.Data.DataColumn();
+            this.tblDoc_Day5 = new System.Data.DataColumn();
+            this.tblDoc_StepStatus = new System.Data.DataColumn();
+            this.设备IDDataGridViewTextBoxColumn2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.总上报次数DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.第1天上报DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.第2天上报DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.第3天上报DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.第4天上报DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.第5天上报DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.步数状态DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.btClearDocView = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dgvLog)).BeginInit();
             this.cMenuLogs.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dsLog)).BeginInit();
@@ -153,6 +183,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.updownPagesize)).BeginInit();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
+            this.tabPage2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvDoc)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.tbDoc)).BeginInit();
             this.SuspendLayout();
             // 
             // dgvLog
@@ -197,7 +230,7 @@
             dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
             this.dgvLog.DefaultCellStyle = dataGridViewCellStyle2;
             this.dgvLog.EditMode = System.Windows.Forms.DataGridViewEditMode.EditProgrammatically;
-            this.dgvLog.Location = new System.Drawing.Point(-4, 0);
+            this.dgvLog.Location = new System.Drawing.Point(0, 0);
             this.dgvLog.Margin = new System.Windows.Forms.Padding(0);
             this.dgvLog.Name = "dgvLog";
             this.dgvLog.ReadOnly = true;
@@ -206,10 +239,82 @@
             this.dgvLog.RowTemplate.Height = 23;
             this.dgvLog.RowTemplate.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             this.dgvLog.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvLog.Size = new System.Drawing.Size(735, 383);
+            this.dgvLog.Size = new System.Drawing.Size(741, 379);
             this.dgvLog.TabIndex = 0;
             this.dgvLog.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.dgvLog_CellFormatting);
             this.dgvLog.RowsAdded += new System.Windows.Forms.DataGridViewRowsAddedEventHandler(this.dgv_RowsAdded);
+            // 
+            // 设备IDDataGridViewTextBoxColumn
+            // 
+            this.设备IDDataGridViewTextBoxColumn.DataPropertyName = "设备ID";
+            this.设备IDDataGridViewTextBoxColumn.HeaderText = "设备ID";
+            this.设备IDDataGridViewTextBoxColumn.Name = "设备IDDataGridViewTextBoxColumn";
+            this.设备IDDataGridViewTextBoxColumn.ReadOnly = true;
+            this.设备IDDataGridViewTextBoxColumn.Width = 90;
+            // 
+            // 设备状态DataGridViewTextBoxColumn
+            // 
+            this.设备状态DataGridViewTextBoxColumn.DataPropertyName = "设备状态";
+            this.设备状态DataGridViewTextBoxColumn.HeaderText = "设备状态";
+            this.设备状态DataGridViewTextBoxColumn.Name = "设备状态DataGridViewTextBoxColumn";
+            this.设备状态DataGridViewTextBoxColumn.ReadOnly = true;
+            this.设备状态DataGridViewTextBoxColumn.Width = 65;
+            // 
+            // 设备电压DataGridViewTextBoxColumn
+            // 
+            this.设备电压DataGridViewTextBoxColumn.DataPropertyName = "设备电压";
+            this.设备电压DataGridViewTextBoxColumn.HeaderText = "设备电压";
+            this.设备电压DataGridViewTextBoxColumn.Name = "设备电压DataGridViewTextBoxColumn";
+            this.设备电压DataGridViewTextBoxColumn.ReadOnly = true;
+            this.设备电压DataGridViewTextBoxColumn.Width = 65;
+            // 
+            // 基站IDDataGridViewTextBoxColumn
+            // 
+            this.基站IDDataGridViewTextBoxColumn.DataPropertyName = "基站ID";
+            this.基站IDDataGridViewTextBoxColumn.HeaderText = "基站ID";
+            this.基站IDDataGridViewTextBoxColumn.Name = "基站IDDataGridViewTextBoxColumn";
+            this.基站IDDataGridViewTextBoxColumn.ReadOnly = true;
+            this.基站IDDataGridViewTextBoxColumn.Width = 90;
+            // 
+            // 信号量DataGridViewTextBoxColumn
+            // 
+            this.信号量DataGridViewTextBoxColumn.DataPropertyName = "信号量";
+            this.信号量DataGridViewTextBoxColumn.HeaderText = "信号量";
+            this.信号量DataGridViewTextBoxColumn.Name = "信号量DataGridViewTextBoxColumn";
+            this.信号量DataGridViewTextBoxColumn.ReadOnly = true;
+            this.信号量DataGridViewTextBoxColumn.Width = 50;
+            // 
+            // 步数总计DataGridViewTextBoxColumn
+            // 
+            this.步数总计DataGridViewTextBoxColumn.DataPropertyName = "步数总计";
+            this.步数总计DataGridViewTextBoxColumn.HeaderText = "步数总计";
+            this.步数总计DataGridViewTextBoxColumn.Name = "步数总计DataGridViewTextBoxColumn";
+            this.步数总计DataGridViewTextBoxColumn.ReadOnly = true;
+            this.步数总计DataGridViewTextBoxColumn.Width = 70;
+            // 
+            // 时间DataGridViewTextBoxColumn
+            // 
+            this.时间DataGridViewTextBoxColumn.DataPropertyName = "时间";
+            this.时间DataGridViewTextBoxColumn.HeaderText = "时间";
+            this.时间DataGridViewTextBoxColumn.Name = "时间DataGridViewTextBoxColumn";
+            this.时间DataGridViewTextBoxColumn.ReadOnly = true;
+            this.时间DataGridViewTextBoxColumn.Width = 120;
+            // 
+            // 版本号DataGridViewTextBoxColumn
+            // 
+            this.版本号DataGridViewTextBoxColumn.DataPropertyName = "版本号";
+            this.版本号DataGridViewTextBoxColumn.HeaderText = "版本号";
+            this.版本号DataGridViewTextBoxColumn.Name = "版本号DataGridViewTextBoxColumn";
+            this.版本号DataGridViewTextBoxColumn.ReadOnly = true;
+            this.版本号DataGridViewTextBoxColumn.Width = 50;
+            // 
+            // 帧序号DataGridViewTextBoxColumn
+            // 
+            this.帧序号DataGridViewTextBoxColumn.DataPropertyName = "帧序号";
+            this.帧序号DataGridViewTextBoxColumn.HeaderText = "帧序号";
+            this.帧序号DataGridViewTextBoxColumn.Name = "帧序号DataGridViewTextBoxColumn";
+            this.帧序号DataGridViewTextBoxColumn.ReadOnly = true;
+            this.帧序号DataGridViewTextBoxColumn.Width = 50;
             // 
             // cMenuLogs
             // 
@@ -264,7 +369,8 @@
             this.tbLog,
             this.tbDevices,
             this.tbStations,
-            this.tbDates});
+            this.tbDates,
+            this.tbDoc});
             // 
             // tbLog
             // 
@@ -475,6 +581,20 @@
             this.dgvDevice.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvDevice_CellClick);
             this.dgvDevice.RowsAdded += new System.Windows.Forms.DataGridViewRowsAddedEventHandler(this.dgv_RowsAdded);
             // 
+            // 设备IDDataGridViewTextBoxColumn1
+            // 
+            this.设备IDDataGridViewTextBoxColumn1.DataPropertyName = "设备ID";
+            this.设备IDDataGridViewTextBoxColumn1.HeaderText = "设备ID";
+            this.设备IDDataGridViewTextBoxColumn1.Name = "设备IDDataGridViewTextBoxColumn1";
+            this.设备IDDataGridViewTextBoxColumn1.Width = 90;
+            // 
+            // dataGridViewTextBoxColumn2
+            // 
+            this.dataGridViewTextBoxColumn2.DataPropertyName = "上报次数";
+            this.dataGridViewTextBoxColumn2.HeaderText = "上报次数";
+            this.dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
+            this.dataGridViewTextBoxColumn2.Width = 60;
+            // 
             // cMenuDevices
             // 
             this.cMenuDevices.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -549,6 +669,20 @@
             this.dgvStation.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvStation_CellClick);
             this.dgvStation.RowsAdded += new System.Windows.Forms.DataGridViewRowsAddedEventHandler(this.dgv_RowsAdded);
             // 
+            // 基站IDDataGridViewTextBoxColumn1
+            // 
+            this.基站IDDataGridViewTextBoxColumn1.DataPropertyName = "基站ID";
+            this.基站IDDataGridViewTextBoxColumn1.HeaderText = "基站ID";
+            this.基站IDDataGridViewTextBoxColumn1.Name = "基站IDDataGridViewTextBoxColumn1";
+            this.基站IDDataGridViewTextBoxColumn1.Width = 90;
+            // 
+            // dataGridViewTextBoxColumn1
+            // 
+            this.dataGridViewTextBoxColumn1.DataPropertyName = "设备个数";
+            this.dataGridViewTextBoxColumn1.HeaderText = "设备个数";
+            this.dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
+            this.dataGridViewTextBoxColumn1.Width = 60;
+            // 
             // cMenuStations
             // 
             this.cMenuStations.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -607,6 +741,20 @@
             this.dgvDate.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvDate_CellClick);
             this.dgvDate.RowsAdded += new System.Windows.Forms.DataGridViewRowsAddedEventHandler(this.dgv_RowsAdded);
             // 
+            // 日期DataGridViewTextBoxColumn
+            // 
+            this.日期DataGridViewTextBoxColumn.DataPropertyName = "日期";
+            this.日期DataGridViewTextBoxColumn.HeaderText = "日期";
+            this.日期DataGridViewTextBoxColumn.Name = "日期DataGridViewTextBoxColumn";
+            this.日期DataGridViewTextBoxColumn.Width = 90;
+            // 
+            // dataGridViewTextBoxColumn3
+            // 
+            this.dataGridViewTextBoxColumn3.DataPropertyName = "记录条数";
+            this.dataGridViewTextBoxColumn3.HeaderText = "记录条数";
+            this.dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
+            this.dataGridViewTextBoxColumn3.Width = 60;
+            // 
             // cMenuDates
             // 
             this.cMenuDates.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -654,7 +802,7 @@
             this.groupBox3.Controls.Add(this.btClearAll);
             this.groupBox3.Location = new System.Drawing.Point(0, -6);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(995, 71);
+            this.groupBox3.Size = new System.Drawing.Size(1002, 71);
             this.groupBox3.TabIndex = 2;
             this.groupBox3.TabStop = false;
             // 
@@ -918,7 +1066,7 @@
             // 
             this.lbResultCnt.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.lbResultCnt.AutoSize = true;
-            this.lbResultCnt.Location = new System.Drawing.Point(258, 480);
+            this.lbResultCnt.Location = new System.Drawing.Point(3, 388);
             this.lbResultCnt.Name = "lbResultCnt";
             this.lbResultCnt.Size = new System.Drawing.Size(143, 12);
             this.lbResultCnt.TabIndex = 3;
@@ -929,7 +1077,7 @@
             this.btPagePrev.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.btPagePrev.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.btPagePrev.Font = new System.Drawing.Font("宋体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btPagePrev.Location = new System.Drawing.Point(476, 474);
+            this.btPagePrev.Location = new System.Drawing.Point(209, 382);
             this.btPagePrev.Name = "btPagePrev";
             this.btPagePrev.Size = new System.Drawing.Size(53, 24);
             this.btPagePrev.TabIndex = 4;
@@ -942,7 +1090,7 @@
             this.btPageNext.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.btPageNext.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.btPageNext.Font = new System.Drawing.Font("宋体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btPageNext.Location = new System.Drawing.Point(620, 474);
+            this.btPageNext.Location = new System.Drawing.Point(353, 382);
             this.btPageNext.Name = "btPageNext";
             this.btPageNext.Size = new System.Drawing.Size(53, 24);
             this.btPageNext.TabIndex = 4;
@@ -953,7 +1101,7 @@
             // txtCurrPage
             // 
             this.txtCurrPage.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.txtCurrPage.Location = new System.Drawing.Point(539, 475);
+            this.txtCurrPage.Location = new System.Drawing.Point(272, 383);
             this.txtCurrPage.Name = "txtCurrPage";
             this.txtCurrPage.Size = new System.Drawing.Size(38, 21);
             this.txtCurrPage.TabIndex = 5;
@@ -963,7 +1111,7 @@
             // 
             this.lbPageCnt.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.lbPageCnt.AutoSize = true;
-            this.lbPageCnt.Location = new System.Drawing.Point(579, 479);
+            this.lbPageCnt.Location = new System.Drawing.Point(312, 387);
             this.lbPageCnt.Name = "lbPageCnt";
             this.lbPageCnt.Size = new System.Drawing.Size(35, 12);
             this.lbPageCnt.TabIndex = 6;
@@ -972,9 +1120,9 @@
             // rtbMsg
             // 
             this.rtbMsg.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.rtbMsg.Location = new System.Drawing.Point(260, 504);
+            this.rtbMsg.Location = new System.Drawing.Point(264, 504);
             this.rtbMsg.Name = "rtbMsg";
-            this.rtbMsg.Size = new System.Drawing.Size(735, 102);
+            this.rtbMsg.Size = new System.Drawing.Size(734, 102);
             this.rtbMsg.TabIndex = 7;
             this.rtbMsg.Text = "";
             // 
@@ -983,7 +1131,7 @@
             this.btClearCurrent.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.btClearCurrent.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.btClearCurrent.Font = new System.Drawing.Font("宋体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btClearCurrent.Location = new System.Drawing.Point(700, 474);
+            this.btClearCurrent.Location = new System.Drawing.Point(433, 382);
             this.btClearCurrent.Name = "btClearCurrent";
             this.btClearCurrent.Size = new System.Drawing.Size(93, 24);
             this.btClearCurrent.TabIndex = 1;
@@ -1002,159 +1150,246 @@
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.Padding = new System.Drawing.Point(0, 0);
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(732, 405);
+            this.tabControl1.Size = new System.Drawing.Size(742, 435);
             this.tabControl1.TabIndex = 9;
             // 
             // tabPage1
             // 
             this.tabPage1.Controls.Add(this.dgvLog);
+            this.tabPage1.Controls.Add(this.lbResultCnt);
+            this.tabPage1.Controls.Add(this.btClearCurrent);
+            this.tabPage1.Controls.Add(this.btPagePrev);
+            this.tabPage1.Controls.Add(this.btPageNext);
+            this.tabPage1.Controls.Add(this.txtCurrPage);
+            this.tabPage1.Controls.Add(this.lbPageCnt);
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
             this.tabPage1.Margin = new System.Windows.Forms.Padding(0);
             this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Size = new System.Drawing.Size(724, 379);
+            this.tabPage1.Size = new System.Drawing.Size(734, 409);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "查询结果";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.btClearDocView);
+            this.tabPage2.Controls.Add(this.lbCurrDocCnt);
+            this.tabPage2.Controls.Add(this.btDocDelete);
+            this.tabPage2.Controls.Add(this.btDocImport);
+            this.tabPage2.Controls.Add(this.dgvDoc);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(724, 379);
+            this.tabPage2.Size = new System.Drawing.Size(734, 409);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "设备档案信息";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
-            // 设备IDDataGridViewTextBoxColumn
+            // dgvDoc
             // 
-            this.设备IDDataGridViewTextBoxColumn.DataPropertyName = "设备ID";
-            this.设备IDDataGridViewTextBoxColumn.HeaderText = "设备ID";
-            this.设备IDDataGridViewTextBoxColumn.Name = "设备IDDataGridViewTextBoxColumn";
-            this.设备IDDataGridViewTextBoxColumn.ReadOnly = true;
-            this.设备IDDataGridViewTextBoxColumn.Width = 90;
+            this.dgvDoc.AllowUserToAddRows = false;
+            this.dgvDoc.AllowUserToDeleteRows = false;
+            this.dgvDoc.AllowUserToResizeRows = false;
+            this.dgvDoc.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.dgvDoc.AutoGenerateColumns = false;
+            this.dgvDoc.BackgroundColor = System.Drawing.SystemColors.ControlLight;
+            this.dgvDoc.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvDoc.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.设备IDDataGridViewTextBoxColumn2,
+            this.总上报次数DataGridViewTextBoxColumn,
+            this.第1天上报DataGridViewTextBoxColumn,
+            this.第2天上报DataGridViewTextBoxColumn,
+            this.第3天上报DataGridViewTextBoxColumn,
+            this.第4天上报DataGridViewTextBoxColumn,
+            this.第5天上报DataGridViewTextBoxColumn,
+            this.步数状态DataGridViewTextBoxColumn});
+            this.dgvDoc.DataMember = "tblDoc";
+            this.dgvDoc.DataSource = this.dsLog;
+            this.dgvDoc.EditMode = System.Windows.Forms.DataGridViewEditMode.EditProgrammatically;
+            this.dgvDoc.Location = new System.Drawing.Point(0, 0);
+            this.dgvDoc.Name = "dgvDoc";
+            this.dgvDoc.RowHeadersWidth = 60;
+            this.dgvDoc.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
+            this.dgvDoc.RowTemplate.Height = 23;
+            this.dgvDoc.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvDoc.Size = new System.Drawing.Size(734, 379);
+            this.dgvDoc.TabIndex = 0;
+            this.dgvDoc.RowsAdded += new System.Windows.Forms.DataGridViewRowsAddedEventHandler(this.dgv_RowsAdded);
             // 
-            // 设备状态DataGridViewTextBoxColumn
+            // btDocImport
             // 
-            this.设备状态DataGridViewTextBoxColumn.DataPropertyName = "设备状态";
-            this.设备状态DataGridViewTextBoxColumn.HeaderText = "设备状态";
-            this.设备状态DataGridViewTextBoxColumn.Name = "设备状态DataGridViewTextBoxColumn";
-            this.设备状态DataGridViewTextBoxColumn.ReadOnly = true;
-            this.设备状态DataGridViewTextBoxColumn.Width = 65;
+            this.btDocImport.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.btDocImport.Location = new System.Drawing.Point(226, 382);
+            this.btDocImport.Name = "btDocImport";
+            this.btDocImport.Size = new System.Drawing.Size(70, 24);
+            this.btDocImport.TabIndex = 1;
+            this.btDocImport.Text = "导入档案";
+            this.btDocImport.UseVisualStyleBackColor = false;
+            this.btDocImport.Click += new System.EventHandler(this.btDocImport_Click);
             // 
-            // 设备电压DataGridViewTextBoxColumn
+            // btDocDelete
             // 
-            this.设备电压DataGridViewTextBoxColumn.DataPropertyName = "设备电压";
-            this.设备电压DataGridViewTextBoxColumn.HeaderText = "设备电压";
-            this.设备电压DataGridViewTextBoxColumn.Name = "设备电压DataGridViewTextBoxColumn";
-            this.设备电压DataGridViewTextBoxColumn.ReadOnly = true;
-            this.设备电压DataGridViewTextBoxColumn.Width = 65;
+            this.btDocDelete.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.btDocDelete.Location = new System.Drawing.Point(339, 382);
+            this.btDocDelete.Name = "btDocDelete";
+            this.btDocDelete.Size = new System.Drawing.Size(69, 24);
+            this.btDocDelete.TabIndex = 1;
+            this.btDocDelete.Text = "删除档案";
+            this.btDocDelete.UseVisualStyleBackColor = false;
+            this.btDocDelete.Click += new System.EventHandler(this.btDocDelete_Click);
             // 
-            // 基站IDDataGridViewTextBoxColumn
+            // lbCurrDocCnt
             // 
-            this.基站IDDataGridViewTextBoxColumn.DataPropertyName = "基站ID";
-            this.基站IDDataGridViewTextBoxColumn.HeaderText = "基站ID";
-            this.基站IDDataGridViewTextBoxColumn.Name = "基站IDDataGridViewTextBoxColumn";
-            this.基站IDDataGridViewTextBoxColumn.ReadOnly = true;
-            this.基站IDDataGridViewTextBoxColumn.Width = 90;
+            this.lbCurrDocCnt.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.lbCurrDocCnt.AutoSize = true;
+            this.lbCurrDocCnt.Location = new System.Drawing.Point(3, 389);
+            this.lbCurrDocCnt.Name = "lbCurrDocCnt";
+            this.lbCurrDocCnt.Size = new System.Drawing.Size(185, 12);
+            this.lbCurrDocCnt.TabIndex = 4;
+            this.lbCurrDocCnt.Text = "当前档案： ** 个  未上报 ** 个";
             // 
-            // 信号量DataGridViewTextBoxColumn
+            // tbDoc
             // 
-            this.信号量DataGridViewTextBoxColumn.DataPropertyName = "信号量";
-            this.信号量DataGridViewTextBoxColumn.HeaderText = "信号量";
-            this.信号量DataGridViewTextBoxColumn.Name = "信号量DataGridViewTextBoxColumn";
-            this.信号量DataGridViewTextBoxColumn.ReadOnly = true;
-            this.信号量DataGridViewTextBoxColumn.Width = 50;
+            this.tbDoc.Columns.AddRange(new System.Data.DataColumn[] {
+            this.tblDoc_deviceId,
+            this.tblDoc_AllRptCnt,
+            this.tblDoc_RptDay1,
+            this.tblDoc_RptDay2,
+            this.tblDoc_RptDay3,
+            this.tblDoc_Day4,
+            this.tblDoc_Day5,
+            this.tblDoc_StepStatus});
+            this.tbDoc.TableName = "tblDoc";
             // 
-            // 步数总计DataGridViewTextBoxColumn
+            // tblDoc_deviceId
             // 
-            this.步数总计DataGridViewTextBoxColumn.DataPropertyName = "步数总计";
-            this.步数总计DataGridViewTextBoxColumn.HeaderText = "步数总计";
-            this.步数总计DataGridViewTextBoxColumn.Name = "步数总计DataGridViewTextBoxColumn";
-            this.步数总计DataGridViewTextBoxColumn.ReadOnly = true;
-            this.步数总计DataGridViewTextBoxColumn.Width = 70;
+            this.tblDoc_deviceId.ColumnName = "设备ID";
+            this.tblDoc_deviceId.DataType = typeof(long);
             // 
-            // 时间DataGridViewTextBoxColumn
+            // tblDoc_AllRptCnt
             // 
-            this.时间DataGridViewTextBoxColumn.DataPropertyName = "时间";
-            this.时间DataGridViewTextBoxColumn.HeaderText = "时间";
-            this.时间DataGridViewTextBoxColumn.Name = "时间DataGridViewTextBoxColumn";
-            this.时间DataGridViewTextBoxColumn.ReadOnly = true;
-            this.时间DataGridViewTextBoxColumn.Width = 120;
+            this.tblDoc_AllRptCnt.ColumnName = "总上报次数";
+            this.tblDoc_AllRptCnt.DataType = typeof(int);
             // 
-            // 版本号DataGridViewTextBoxColumn
+            // tblDoc_RptDay1
             // 
-            this.版本号DataGridViewTextBoxColumn.DataPropertyName = "版本号";
-            this.版本号DataGridViewTextBoxColumn.HeaderText = "版本号";
-            this.版本号DataGridViewTextBoxColumn.Name = "版本号DataGridViewTextBoxColumn";
-            this.版本号DataGridViewTextBoxColumn.ReadOnly = true;
-            this.版本号DataGridViewTextBoxColumn.Width = 50;
+            this.tblDoc_RptDay1.ColumnName = "第1天上报";
+            this.tblDoc_RptDay1.DataType = typeof(int);
             // 
-            // 帧序号DataGridViewTextBoxColumn
+            // tblDoc_RptDay2
             // 
-            this.帧序号DataGridViewTextBoxColumn.DataPropertyName = "帧序号";
-            this.帧序号DataGridViewTextBoxColumn.HeaderText = "帧序号";
-            this.帧序号DataGridViewTextBoxColumn.Name = "帧序号DataGridViewTextBoxColumn";
-            this.帧序号DataGridViewTextBoxColumn.ReadOnly = true;
-            this.帧序号DataGridViewTextBoxColumn.Width = 50;
+            this.tblDoc_RptDay2.ColumnName = "第2天上报";
+            this.tblDoc_RptDay2.DataType = typeof(int);
             // 
-            // 设备IDDataGridViewTextBoxColumn1
+            // tblDoc_RptDay3
             // 
-            this.设备IDDataGridViewTextBoxColumn1.DataPropertyName = "设备ID";
-            this.设备IDDataGridViewTextBoxColumn1.HeaderText = "设备ID";
-            this.设备IDDataGridViewTextBoxColumn1.Name = "设备IDDataGridViewTextBoxColumn1";
-            this.设备IDDataGridViewTextBoxColumn1.Width = 90;
+            this.tblDoc_RptDay3.ColumnName = "第3天上报";
+            this.tblDoc_RptDay3.DataType = typeof(int);
             // 
-            // dataGridViewTextBoxColumn2
+            // tblDoc_Day4
             // 
-            this.dataGridViewTextBoxColumn2.DataPropertyName = "上报次数";
-            this.dataGridViewTextBoxColumn2.HeaderText = "上报次数";
-            this.dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
-            this.dataGridViewTextBoxColumn2.Width = 60;
+            this.tblDoc_Day4.ColumnName = "第4天上报";
+            this.tblDoc_Day4.DataType = typeof(int);
             // 
-            // 日期DataGridViewTextBoxColumn
+            // tblDoc_Day5
             // 
-            this.日期DataGridViewTextBoxColumn.DataPropertyName = "日期";
-            this.日期DataGridViewTextBoxColumn.HeaderText = "日期";
-            this.日期DataGridViewTextBoxColumn.Name = "日期DataGridViewTextBoxColumn";
-            this.日期DataGridViewTextBoxColumn.Width = 90;
+            this.tblDoc_Day5.ColumnName = "第5天上报";
+            this.tblDoc_Day5.DataType = typeof(int);
             // 
-            // dataGridViewTextBoxColumn3
+            // tblDoc_StepStatus
             // 
-            this.dataGridViewTextBoxColumn3.DataPropertyName = "记录条数";
-            this.dataGridViewTextBoxColumn3.HeaderText = "记录条数";
-            this.dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
-            this.dataGridViewTextBoxColumn3.Width = 60;
+            this.tblDoc_StepStatus.ColumnName = "步数状态";
             // 
-            // 基站IDDataGridViewTextBoxColumn1
+            // 设备IDDataGridViewTextBoxColumn2
             // 
-            this.基站IDDataGridViewTextBoxColumn1.DataPropertyName = "基站ID";
-            this.基站IDDataGridViewTextBoxColumn1.HeaderText = "基站ID";
-            this.基站IDDataGridViewTextBoxColumn1.Name = "基站IDDataGridViewTextBoxColumn1";
-            this.基站IDDataGridViewTextBoxColumn1.Width = 90;
+            this.设备IDDataGridViewTextBoxColumn2.DataPropertyName = "设备ID";
+            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.设备IDDataGridViewTextBoxColumn2.DefaultCellStyle = dataGridViewCellStyle8;
+            this.设备IDDataGridViewTextBoxColumn2.HeaderText = "设备ID";
+            this.设备IDDataGridViewTextBoxColumn2.Name = "设备IDDataGridViewTextBoxColumn2";
+            this.设备IDDataGridViewTextBoxColumn2.Width = 90;
             // 
-            // dataGridViewTextBoxColumn1
+            // 总上报次数DataGridViewTextBoxColumn
             // 
-            this.dataGridViewTextBoxColumn1.DataPropertyName = "设备个数";
-            this.dataGridViewTextBoxColumn1.HeaderText = "设备个数";
-            this.dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
-            this.dataGridViewTextBoxColumn1.Width = 60;
+            this.总上报次数DataGridViewTextBoxColumn.DataPropertyName = "总上报次数";
+            dataGridViewCellStyle9.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.总上报次数DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle9;
+            this.总上报次数DataGridViewTextBoxColumn.HeaderText = "总上报次数";
+            this.总上报次数DataGridViewTextBoxColumn.Name = "总上报次数DataGridViewTextBoxColumn";
+            this.总上报次数DataGridViewTextBoxColumn.Width = 90;
+            // 
+            // 第1天上报DataGridViewTextBoxColumn
+            // 
+            this.第1天上报DataGridViewTextBoxColumn.DataPropertyName = "第1天上报";
+            dataGridViewCellStyle10.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.第1天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle10;
+            this.第1天上报DataGridViewTextBoxColumn.HeaderText = "第1天上报";
+            this.第1天上报DataGridViewTextBoxColumn.Name = "第1天上报DataGridViewTextBoxColumn";
+            // 
+            // 第2天上报DataGridViewTextBoxColumn
+            // 
+            this.第2天上报DataGridViewTextBoxColumn.DataPropertyName = "第2天上报";
+            dataGridViewCellStyle11.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.第2天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle11;
+            this.第2天上报DataGridViewTextBoxColumn.HeaderText = "第2天上报";
+            this.第2天上报DataGridViewTextBoxColumn.Name = "第2天上报DataGridViewTextBoxColumn";
+            // 
+            // 第3天上报DataGridViewTextBoxColumn
+            // 
+            this.第3天上报DataGridViewTextBoxColumn.DataPropertyName = "第3天上报";
+            dataGridViewCellStyle12.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.第3天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle12;
+            this.第3天上报DataGridViewTextBoxColumn.HeaderText = "第3天上报";
+            this.第3天上报DataGridViewTextBoxColumn.Name = "第3天上报DataGridViewTextBoxColumn";
+            // 
+            // 第4天上报DataGridViewTextBoxColumn
+            // 
+            this.第4天上报DataGridViewTextBoxColumn.DataPropertyName = "第4天上报";
+            dataGridViewCellStyle13.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.第4天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle13;
+            this.第4天上报DataGridViewTextBoxColumn.HeaderText = "第4天上报";
+            this.第4天上报DataGridViewTextBoxColumn.Name = "第4天上报DataGridViewTextBoxColumn";
+            // 
+            // 第5天上报DataGridViewTextBoxColumn
+            // 
+            this.第5天上报DataGridViewTextBoxColumn.DataPropertyName = "第5天上报";
+            dataGridViewCellStyle14.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.第5天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle14;
+            this.第5天上报DataGridViewTextBoxColumn.HeaderText = "第5天上报";
+            this.第5天上报DataGridViewTextBoxColumn.Name = "第5天上报DataGridViewTextBoxColumn";
+            // 
+            // 步数状态DataGridViewTextBoxColumn
+            // 
+            this.步数状态DataGridViewTextBoxColumn.DataPropertyName = "步数状态";
+            dataGridViewCellStyle15.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            this.步数状态DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle15;
+            this.步数状态DataGridViewTextBoxColumn.HeaderText = "步数状态";
+            this.步数状态DataGridViewTextBoxColumn.Name = "步数状态DataGridViewTextBoxColumn";
+            // 
+            // btClearDocView
+            // 
+            this.btClearDocView.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btClearDocView.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.btClearDocView.Font = new System.Drawing.Font("宋体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btClearDocView.Location = new System.Drawing.Point(433, 382);
+            this.btClearDocView.Name = "btClearDocView";
+            this.btClearDocView.Size = new System.Drawing.Size(93, 24);
+            this.btClearDocView.TabIndex = 5;
+            this.btClearDocView.Text = "清除当前记录";
+            this.btClearDocView.UseVisualStyleBackColor = false;
+            this.btClearDocView.Click += new System.EventHandler(this.btClearDocView_Click);
             // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(995, 609);
+            this.ClientSize = new System.Drawing.Size(1002, 609);
             this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.rtbMsg);
-            this.Controls.Add(this.lbPageCnt);
-            this.Controls.Add(this.txtCurrPage);
-            this.Controls.Add(this.btPageNext);
-            this.Controls.Add(this.btPagePrev);
-            this.Controls.Add(this.lbResultCnt);
             this.Controls.Add(this.grpDates);
             this.Controls.Add(this.grpStations);
-            this.Controls.Add(this.btClearCurrent);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.grpDevices);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -1182,8 +1417,12 @@
             ((System.ComponentModel.ISupportInitialize)(this.updownPagesize)).EndInit();
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
+            this.tabPage1.PerformLayout();
+            this.tabPage2.ResumeLayout(false);
+            this.tabPage2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvDoc)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.tbDoc)).EndInit();
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
@@ -1283,6 +1522,28 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
         private System.Windows.Forms.DataGridViewTextBoxColumn 基站IDDataGridViewTextBoxColumn1;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
+        private System.Windows.Forms.Label lbCurrDocCnt;
+        private System.Windows.Forms.Button btDocDelete;
+        private System.Windows.Forms.Button btDocImport;
+        private System.Windows.Forms.DataGridView dgvDoc;
+        private System.Data.DataTable tbDoc;
+        private System.Data.DataColumn tblDoc_deviceId;
+        private System.Data.DataColumn tblDoc_AllRptCnt;
+        private System.Data.DataColumn tblDoc_RptDay1;
+        private System.Data.DataColumn tblDoc_RptDay2;
+        private System.Data.DataColumn tblDoc_RptDay3;
+        private System.Data.DataColumn tblDoc_Day4;
+        private System.Data.DataColumn tblDoc_Day5;
+        private System.Data.DataColumn tblDoc_StepStatus;
+        private System.Windows.Forms.DataGridViewTextBoxColumn 设备IDDataGridViewTextBoxColumn2;
+        private System.Windows.Forms.DataGridViewTextBoxColumn 总上报次数DataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn 第1天上报DataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn 第2天上报DataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn 第3天上报DataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn 第4天上报DataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn 第5天上报DataGridViewTextBoxColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn 步数状态DataGridViewTextBoxColumn;
+        private System.Windows.Forms.Button btClearDocView;
     }
 }
 
