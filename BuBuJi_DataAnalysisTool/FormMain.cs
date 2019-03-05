@@ -285,7 +285,8 @@ namespace BuBuJi_DataAnalysisTool
                     "frameSn," +
                     "stepSum," +
                     "date," +
-                    "datetime" +
+                    "datetime," +
+                    "isRepeatRpt" + 
                 ")";
                 _sqldb.ExecuteNonQuery(sql);
 
@@ -781,9 +782,8 @@ namespace BuBuJi_DataAnalysisTool
             _currSelCondition = sqlText;
 
             // 查询总数
-            sqlText = "select count(*) from ( select id from tblLog" + _currSelCondition + " ) as t";
+            sqlText = "select count(*) from ( select id from tblLog" + _currSelCondition + " )";
             _resultCnt = Convert.ToInt32(_sqldb.ExecuteScalar(sqlText));
-
             UpdateResultCnt(_resultCnt);
 
             // 查询第1页显示
