@@ -46,6 +46,7 @@
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle13 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle14 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle15 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle16 = new System.Windows.Forms.DataGridViewCellStyle();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormMain));
             this.dgvLog = new System.Windows.Forms.DataGridView();
             this.设备IDDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -83,6 +84,15 @@
             this.tbDates = new System.Data.DataTable();
             this.tblDates_date = new System.Data.DataColumn();
             this.记录条数 = new System.Data.DataColumn();
+            this.tbDoc = new System.Data.DataTable();
+            this.tblDoc_deviceId = new System.Data.DataColumn();
+            this.tblDoc_AllRptCnt = new System.Data.DataColumn();
+            this.tblDoc_RptDay1 = new System.Data.DataColumn();
+            this.tblDoc_RptDay2 = new System.Data.DataColumn();
+            this.tblDoc_RptDay3 = new System.Data.DataColumn();
+            this.tblDoc_Day4 = new System.Data.DataColumn();
+            this.tblDoc_Day5 = new System.Data.DataColumn();
+            this.tblDoc_StepStatus = new System.Data.DataColumn();
             this.btImport = new System.Windows.Forms.Button();
             this.openFileDlg = new System.Windows.Forms.OpenFileDialog();
             this.saveFileDlg = new System.Windows.Forms.SaveFileDialog();
@@ -141,19 +151,11 @@
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.dgvDoc = new System.Windows.Forms.DataGridView();
-            this.btDocImport = new System.Windows.Forms.Button();
-            this.btDocDelete = new System.Windows.Forms.Button();
+            this.btClearDocView = new System.Windows.Forms.Button();
             this.lbCurrDocCnt = new System.Windows.Forms.Label();
-            this.tbDoc = new System.Data.DataTable();
-            this.tblDoc_deviceId = new System.Data.DataColumn();
-            this.tblDoc_AllRptCnt = new System.Data.DataColumn();
-            this.tblDoc_RptDay1 = new System.Data.DataColumn();
-            this.tblDoc_RptDay2 = new System.Data.DataColumn();
-            this.tblDoc_RptDay3 = new System.Data.DataColumn();
-            this.tblDoc_Day4 = new System.Data.DataColumn();
-            this.tblDoc_Day5 = new System.Data.DataColumn();
-            this.tblDoc_StepStatus = new System.Data.DataColumn();
+            this.btDocDelete = new System.Windows.Forms.Button();
+            this.btDocImport = new System.Windows.Forms.Button();
+            this.dgvDoc = new System.Windows.Forms.DataGridView();
             this.设备IDDataGridViewTextBoxColumn2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.总上报次数DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.第1天上报DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -162,7 +164,9 @@
             this.第4天上报DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.第5天上报DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.步数状态DataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.btClearDocView = new System.Windows.Forms.Button();
+            this.cMenuDocs = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.导出列表ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.选择当前行设备IDToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.dgvLog)).BeginInit();
             this.cMenuLogs.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dsLog)).BeginInit();
@@ -170,6 +174,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.tbDevices)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tbStations)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tbDates)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.tbDoc)).BeginInit();
             this.grpDevices.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDevice)).BeginInit();
             this.cMenuDevices.SuspendLayout();
@@ -185,7 +190,7 @@
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDoc)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.tbDoc)).BeginInit();
+            this.cMenuDocs.SuspendLayout();
             this.SuspendLayout();
             // 
             // dgvLog
@@ -490,6 +495,58 @@
             // 
             this.记录条数.ColumnName = "记录条数";
             this.记录条数.DataType = typeof(long);
+            // 
+            // tbDoc
+            // 
+            this.tbDoc.Columns.AddRange(new System.Data.DataColumn[] {
+            this.tblDoc_deviceId,
+            this.tblDoc_AllRptCnt,
+            this.tblDoc_RptDay1,
+            this.tblDoc_RptDay2,
+            this.tblDoc_RptDay3,
+            this.tblDoc_Day4,
+            this.tblDoc_Day5,
+            this.tblDoc_StepStatus});
+            this.tbDoc.TableName = "tblDoc";
+            // 
+            // tblDoc_deviceId
+            // 
+            this.tblDoc_deviceId.ColumnName = "设备ID";
+            this.tblDoc_deviceId.DataType = typeof(long);
+            // 
+            // tblDoc_AllRptCnt
+            // 
+            this.tblDoc_AllRptCnt.ColumnName = "总上报次数";
+            this.tblDoc_AllRptCnt.DataType = typeof(int);
+            // 
+            // tblDoc_RptDay1
+            // 
+            this.tblDoc_RptDay1.ColumnName = "第1天上报";
+            this.tblDoc_RptDay1.DataType = typeof(int);
+            // 
+            // tblDoc_RptDay2
+            // 
+            this.tblDoc_RptDay2.ColumnName = "第2天上报";
+            this.tblDoc_RptDay2.DataType = typeof(int);
+            // 
+            // tblDoc_RptDay3
+            // 
+            this.tblDoc_RptDay3.ColumnName = "第3天上报";
+            this.tblDoc_RptDay3.DataType = typeof(int);
+            // 
+            // tblDoc_Day4
+            // 
+            this.tblDoc_Day4.ColumnName = "第4天上报";
+            this.tblDoc_Day4.DataType = typeof(int);
+            // 
+            // tblDoc_Day5
+            // 
+            this.tblDoc_Day5.ColumnName = "第5天上报";
+            this.tblDoc_Day5.DataType = typeof(int);
+            // 
+            // tblDoc_StepStatus
+            // 
+            this.tblDoc_StepStatus.ColumnName = "步数状态";
             // 
             // btImport
             // 
@@ -1141,8 +1198,9 @@
             // 
             // tabControl1
             // 
-            this.tabControl1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
+            this.tabControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Controls.Add(this.tabPage1);
             this.tabControl1.Controls.Add(this.tabPage2);
             this.tabControl1.Location = new System.Drawing.Point(260, 66);
@@ -1185,6 +1243,53 @@
             this.tabPage2.Text = "设备档案信息";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // btClearDocView
+            // 
+            this.btClearDocView.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btClearDocView.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.btClearDocView.Font = new System.Drawing.Font("宋体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btClearDocView.Location = new System.Drawing.Point(433, 382);
+            this.btClearDocView.Name = "btClearDocView";
+            this.btClearDocView.Size = new System.Drawing.Size(93, 24);
+            this.btClearDocView.TabIndex = 5;
+            this.btClearDocView.Text = "清除当前记录";
+            this.btClearDocView.UseVisualStyleBackColor = false;
+            this.btClearDocView.Click += new System.EventHandler(this.btClearDocView_Click);
+            // 
+            // lbCurrDocCnt
+            // 
+            this.lbCurrDocCnt.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.lbCurrDocCnt.AutoSize = true;
+            this.lbCurrDocCnt.Location = new System.Drawing.Point(3, 389);
+            this.lbCurrDocCnt.Name = "lbCurrDocCnt";
+            this.lbCurrDocCnt.Size = new System.Drawing.Size(185, 12);
+            this.lbCurrDocCnt.TabIndex = 4;
+            this.lbCurrDocCnt.Text = "当前档案： ** 个  未上报 ** 个";
+            // 
+            // btDocDelete
+            // 
+            this.btDocDelete.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btDocDelete.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.btDocDelete.Location = new System.Drawing.Point(339, 382);
+            this.btDocDelete.Name = "btDocDelete";
+            this.btDocDelete.Size = new System.Drawing.Size(69, 24);
+            this.btDocDelete.TabIndex = 1;
+            this.btDocDelete.Text = "删除档案";
+            this.btDocDelete.UseVisualStyleBackColor = false;
+            this.btDocDelete.Click += new System.EventHandler(this.btDocDelete_Click);
+            // 
+            // btDocImport
+            // 
+            this.btDocImport.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btDocImport.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.btDocImport.Location = new System.Drawing.Point(226, 382);
+            this.btDocImport.Name = "btDocImport";
+            this.btDocImport.Size = new System.Drawing.Size(70, 24);
+            this.btDocImport.TabIndex = 1;
+            this.btDocImport.Text = "导入档案";
+            this.btDocImport.UseVisualStyleBackColor = false;
+            this.btDocImport.Click += new System.EventHandler(this.btDocImport_Click);
+            // 
             // dgvDoc
             // 
             this.dgvDoc.AllowUserToAddRows = false;
@@ -1195,7 +1300,15 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvDoc.AutoGenerateColumns = false;
             this.dgvDoc.BackgroundColor = System.Drawing.SystemColors.ControlLight;
-            this.dgvDoc.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle8.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle8.Font = new System.Drawing.Font("宋体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            dataGridViewCellStyle8.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle8.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle8.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle8.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvDoc.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle8;
+            this.dgvDoc.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             this.dgvDoc.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.设备IDDataGridViewTextBoxColumn2,
             this.总上报次数DataGridViewTextBoxColumn,
@@ -1216,97 +1329,14 @@
             this.dgvDoc.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgvDoc.Size = new System.Drawing.Size(734, 379);
             this.dgvDoc.TabIndex = 0;
+            this.dgvDoc.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.dgvDoc_CellFormatting);
             this.dgvDoc.RowsAdded += new System.Windows.Forms.DataGridViewRowsAddedEventHandler(this.dgv_RowsAdded);
-            // 
-            // btDocImport
-            // 
-            this.btDocImport.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            this.btDocImport.Location = new System.Drawing.Point(226, 382);
-            this.btDocImport.Name = "btDocImport";
-            this.btDocImport.Size = new System.Drawing.Size(70, 24);
-            this.btDocImport.TabIndex = 1;
-            this.btDocImport.Text = "导入档案";
-            this.btDocImport.UseVisualStyleBackColor = false;
-            this.btDocImport.Click += new System.EventHandler(this.btDocImport_Click);
-            // 
-            // btDocDelete
-            // 
-            this.btDocDelete.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            this.btDocDelete.Location = new System.Drawing.Point(339, 382);
-            this.btDocDelete.Name = "btDocDelete";
-            this.btDocDelete.Size = new System.Drawing.Size(69, 24);
-            this.btDocDelete.TabIndex = 1;
-            this.btDocDelete.Text = "删除档案";
-            this.btDocDelete.UseVisualStyleBackColor = false;
-            this.btDocDelete.Click += new System.EventHandler(this.btDocDelete_Click);
-            // 
-            // lbCurrDocCnt
-            // 
-            this.lbCurrDocCnt.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.lbCurrDocCnt.AutoSize = true;
-            this.lbCurrDocCnt.Location = new System.Drawing.Point(3, 389);
-            this.lbCurrDocCnt.Name = "lbCurrDocCnt";
-            this.lbCurrDocCnt.Size = new System.Drawing.Size(185, 12);
-            this.lbCurrDocCnt.TabIndex = 4;
-            this.lbCurrDocCnt.Text = "当前档案： ** 个  未上报 ** 个";
-            // 
-            // tbDoc
-            // 
-            this.tbDoc.Columns.AddRange(new System.Data.DataColumn[] {
-            this.tblDoc_deviceId,
-            this.tblDoc_AllRptCnt,
-            this.tblDoc_RptDay1,
-            this.tblDoc_RptDay2,
-            this.tblDoc_RptDay3,
-            this.tblDoc_Day4,
-            this.tblDoc_Day5,
-            this.tblDoc_StepStatus});
-            this.tbDoc.TableName = "tblDoc";
-            // 
-            // tblDoc_deviceId
-            // 
-            this.tblDoc_deviceId.ColumnName = "设备ID";
-            this.tblDoc_deviceId.DataType = typeof(long);
-            // 
-            // tblDoc_AllRptCnt
-            // 
-            this.tblDoc_AllRptCnt.ColumnName = "总上报次数";
-            this.tblDoc_AllRptCnt.DataType = typeof(int);
-            // 
-            // tblDoc_RptDay1
-            // 
-            this.tblDoc_RptDay1.ColumnName = "第1天上报";
-            this.tblDoc_RptDay1.DataType = typeof(int);
-            // 
-            // tblDoc_RptDay2
-            // 
-            this.tblDoc_RptDay2.ColumnName = "第2天上报";
-            this.tblDoc_RptDay2.DataType = typeof(int);
-            // 
-            // tblDoc_RptDay3
-            // 
-            this.tblDoc_RptDay3.ColumnName = "第3天上报";
-            this.tblDoc_RptDay3.DataType = typeof(int);
-            // 
-            // tblDoc_Day4
-            // 
-            this.tblDoc_Day4.ColumnName = "第4天上报";
-            this.tblDoc_Day4.DataType = typeof(int);
-            // 
-            // tblDoc_Day5
-            // 
-            this.tblDoc_Day5.ColumnName = "第5天上报";
-            this.tblDoc_Day5.DataType = typeof(int);
-            // 
-            // tblDoc_StepStatus
-            // 
-            this.tblDoc_StepStatus.ColumnName = "步数状态";
             // 
             // 设备IDDataGridViewTextBoxColumn2
             // 
             this.设备IDDataGridViewTextBoxColumn2.DataPropertyName = "设备ID";
-            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.设备IDDataGridViewTextBoxColumn2.DefaultCellStyle = dataGridViewCellStyle8;
+            dataGridViewCellStyle9.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.设备IDDataGridViewTextBoxColumn2.DefaultCellStyle = dataGridViewCellStyle9;
             this.设备IDDataGridViewTextBoxColumn2.HeaderText = "设备ID";
             this.设备IDDataGridViewTextBoxColumn2.Name = "设备IDDataGridViewTextBoxColumn2";
             this.设备IDDataGridViewTextBoxColumn2.Width = 90;
@@ -1314,72 +1344,85 @@
             // 总上报次数DataGridViewTextBoxColumn
             // 
             this.总上报次数DataGridViewTextBoxColumn.DataPropertyName = "总上报次数";
-            dataGridViewCellStyle9.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.总上报次数DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle9;
+            dataGridViewCellStyle10.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.总上报次数DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle10;
             this.总上报次数DataGridViewTextBoxColumn.HeaderText = "总上报次数";
             this.总上报次数DataGridViewTextBoxColumn.Name = "总上报次数DataGridViewTextBoxColumn";
-            this.总上报次数DataGridViewTextBoxColumn.Width = 90;
+            this.总上报次数DataGridViewTextBoxColumn.Width = 85;
             // 
             // 第1天上报DataGridViewTextBoxColumn
             // 
             this.第1天上报DataGridViewTextBoxColumn.DataPropertyName = "第1天上报";
-            dataGridViewCellStyle10.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.第1天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle10;
+            dataGridViewCellStyle11.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.第1天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle11;
             this.第1天上报DataGridViewTextBoxColumn.HeaderText = "第1天上报";
             this.第1天上报DataGridViewTextBoxColumn.Name = "第1天上报DataGridViewTextBoxColumn";
+            this.第1天上报DataGridViewTextBoxColumn.Width = 85;
             // 
             // 第2天上报DataGridViewTextBoxColumn
             // 
             this.第2天上报DataGridViewTextBoxColumn.DataPropertyName = "第2天上报";
-            dataGridViewCellStyle11.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.第2天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle11;
+            dataGridViewCellStyle12.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.第2天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle12;
             this.第2天上报DataGridViewTextBoxColumn.HeaderText = "第2天上报";
             this.第2天上报DataGridViewTextBoxColumn.Name = "第2天上报DataGridViewTextBoxColumn";
+            this.第2天上报DataGridViewTextBoxColumn.Width = 85;
             // 
             // 第3天上报DataGridViewTextBoxColumn
             // 
             this.第3天上报DataGridViewTextBoxColumn.DataPropertyName = "第3天上报";
-            dataGridViewCellStyle12.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.第3天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle12;
+            dataGridViewCellStyle13.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.第3天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle13;
             this.第3天上报DataGridViewTextBoxColumn.HeaderText = "第3天上报";
             this.第3天上报DataGridViewTextBoxColumn.Name = "第3天上报DataGridViewTextBoxColumn";
+            this.第3天上报DataGridViewTextBoxColumn.Width = 85;
             // 
             // 第4天上报DataGridViewTextBoxColumn
             // 
             this.第4天上报DataGridViewTextBoxColumn.DataPropertyName = "第4天上报";
-            dataGridViewCellStyle13.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.第4天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle13;
+            dataGridViewCellStyle14.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.第4天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle14;
             this.第4天上报DataGridViewTextBoxColumn.HeaderText = "第4天上报";
             this.第4天上报DataGridViewTextBoxColumn.Name = "第4天上报DataGridViewTextBoxColumn";
+            this.第4天上报DataGridViewTextBoxColumn.Width = 85;
             // 
             // 第5天上报DataGridViewTextBoxColumn
             // 
             this.第5天上报DataGridViewTextBoxColumn.DataPropertyName = "第5天上报";
-            dataGridViewCellStyle14.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.第5天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle14;
+            dataGridViewCellStyle15.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.第5天上报DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle15;
             this.第5天上报DataGridViewTextBoxColumn.HeaderText = "第5天上报";
             this.第5天上报DataGridViewTextBoxColumn.Name = "第5天上报DataGridViewTextBoxColumn";
+            this.第5天上报DataGridViewTextBoxColumn.Width = 85;
             // 
             // 步数状态DataGridViewTextBoxColumn
             // 
             this.步数状态DataGridViewTextBoxColumn.DataPropertyName = "步数状态";
-            dataGridViewCellStyle15.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            this.步数状态DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle15;
+            dataGridViewCellStyle16.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            this.步数状态DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle16;
             this.步数状态DataGridViewTextBoxColumn.HeaderText = "步数状态";
             this.步数状态DataGridViewTextBoxColumn.Name = "步数状态DataGridViewTextBoxColumn";
+            this.步数状态DataGridViewTextBoxColumn.Width = 90;
             // 
-            // btClearDocView
+            // cMenuDocs
             // 
-            this.btClearDocView.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btClearDocView.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            this.btClearDocView.Font = new System.Drawing.Font("宋体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btClearDocView.Location = new System.Drawing.Point(433, 382);
-            this.btClearDocView.Name = "btClearDocView";
-            this.btClearDocView.Size = new System.Drawing.Size(93, 24);
-            this.btClearDocView.TabIndex = 5;
-            this.btClearDocView.Text = "清除当前记录";
-            this.btClearDocView.UseVisualStyleBackColor = false;
-            this.btClearDocView.Click += new System.EventHandler(this.btClearDocView_Click);
+            this.cMenuDocs.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.导出列表ToolStripMenuItem,
+            this.选择当前行设备IDToolStripMenuItem1});
+            this.cMenuDocs.Name = "cMenuDocs";
+            this.cMenuDocs.Size = new System.Drawing.Size(179, 48);
+            // 
+            // 导出列表ToolStripMenuItem
+            // 
+            this.导出列表ToolStripMenuItem.Name = "导出列表ToolStripMenuItem";
+            this.导出列表ToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
+            this.导出列表ToolStripMenuItem.Text = "导出列表";
+            // 
+            // 选择当前行设备IDToolStripMenuItem1
+            // 
+            this.选择当前行设备IDToolStripMenuItem1.Name = "选择当前行设备IDToolStripMenuItem1";
+            this.选择当前行设备IDToolStripMenuItem1.Size = new System.Drawing.Size(178, 22);
+            this.选择当前行设备IDToolStripMenuItem1.Text = "选择当前行-设备ID";
             // 
             // FormMain
             // 
@@ -1403,6 +1446,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.tbDevices)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.tbStations)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.tbDates)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.tbDoc)).EndInit();
             this.grpDevices.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvDevice)).EndInit();
             this.cMenuDevices.ResumeLayout(false);
@@ -1421,7 +1465,7 @@
             this.tabPage2.ResumeLayout(false);
             this.tabPage2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDoc)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.tbDoc)).EndInit();
+            this.cMenuDocs.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -1535,6 +1579,7 @@
         private System.Data.DataColumn tblDoc_Day4;
         private System.Data.DataColumn tblDoc_Day5;
         private System.Data.DataColumn tblDoc_StepStatus;
+        private System.Windows.Forms.Button btClearDocView;
         private System.Windows.Forms.DataGridViewTextBoxColumn 设备IDDataGridViewTextBoxColumn2;
         private System.Windows.Forms.DataGridViewTextBoxColumn 总上报次数DataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn 第1天上报DataGridViewTextBoxColumn;
@@ -1543,7 +1588,9 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn 第4天上报DataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn 第5天上报DataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn 步数状态DataGridViewTextBoxColumn;
-        private System.Windows.Forms.Button btClearDocView;
+        private System.Windows.Forms.ContextMenuStrip cMenuDocs;
+        private System.Windows.Forms.ToolStripMenuItem 导出列表ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 选择当前行设备IDToolStripMenuItem1;
     }
 }
 

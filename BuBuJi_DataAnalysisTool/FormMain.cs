@@ -45,7 +45,6 @@ namespace BuBuJi_DataAnalysisTool
         private int _recordCnt;
         private string _currSelCondition;
         private int _currDocCnt;
-        private int _currRptCnt;
 
         public FormMain()
         {
@@ -84,11 +83,19 @@ namespace BuBuJi_DataAnalysisTool
         }
 
         #region UI更新-方法
-        private void ShowMsg(string msg, Color fgColor, bool showTime = true)
+        private void ShowMsg(string msg, Color fgColor, bool showTime = true, bool refreshNow = false)
         {
             if (msg == "") return;
 
             msg = (showTime ? "[" + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.fff") + "]  " : "") + msg;
+
+            if(refreshNow)
+            {
+                rtbMsg.Text = msg;
+                rtbMsg.ForeColor = fgColor;
+                rtbMsg.Refresh();
+                return;
+            }
 
             UiMsg uiMsg = _uiMsgPool.Dequeue();
             uiMsg.Ctrl = rtbMsg;
@@ -160,7 +167,7 @@ namespace BuBuJi_DataAnalysisTool
         {
             UiMsg uiMsg = _uiMsgPool.Dequeue();
             uiMsg.Ctrl = lbCurrDocCnt;
-            uiMsg.Msg = "当前档案：共数 " + DocCnt + " ，未上报 " + RptCnt;
+            uiMsg.Msg = "当前档案：总共 " + DocCnt + " ，未上报 " + RptCnt;
             _uiMsgQueue.Enqueue(uiMsg);
         }
         #endregion
@@ -361,7 +368,7 @@ namespace BuBuJi_DataAnalysisTool
         }
         #endregion
 
-        #region 数据表格显示、行号刷新
+        #region 数据视图-格式化、行号刷新
         private void AddToDataView(object[] objs)
         {
             DataRow row = tbLog.NewRow();
@@ -399,6 +406,14 @@ namespace BuBuJi_DataAnalysisTool
             else if(e.ColumnIndex == 帧序号DataGridViewTextBoxColumn.Index)
             {
             //    e.CellStyle.Format = "X2";
+            }
+        }
+
+        private void dgvDoc_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if(e.ColumnIndex >= 2  && e.ColumnIndex <= 6)
+            {
+                e.Value = ((int)e.Value == 0 ? "" : e.Value);
             }
         }
 
@@ -458,10 +473,7 @@ namespace BuBuJi_DataAnalysisTool
             strFileName = openFileDlg.FileName;
 
 
-            //ShowMsg("Log导入中。。。\r\n", Color.Blue, false);
-            rtbMsg.Text = "Log导入中。。。\r\n";
-            rtbMsg.ForeColor = Color.Blue;
-            rtbMsg.Refresh();
+            ShowMsg("Log导入中。。。\r\n", Color.Blue, false, true);
 
             StreamReader sr = new StreamReader(strFileName, Encoding.UTF8);
 
@@ -537,7 +549,7 @@ namespace BuBuJi_DataAnalysisTool
                     dataFields[11] = 0;
 #endif
 
-#if useStrBuild
+#if fa
                     index = strReadStr.IndexOf("\"di\"");
                     if (index < 0) continue;
 
@@ -611,7 +623,8 @@ namespace BuBuJi_DataAnalysisTool
                         + "frameSn = " + dataFields[10] + " and "
                         + "stepSum = " + dataFields[6] + " and "
                         + "datetime between '" + time.AddSeconds(-3).ToString("yyyy-MM-dd HH:mm:ss")
-                        + "' and '" + time.AddSeconds(3).ToString("yyyy-MM-dd HH:mm:ss") + "'";
+                        + "' and '" + time.AddSeconds(3).ToString("yyyy-MM-dd HH:mm:ss") + "'"
+                        + " limit 1";
                     if (cmd.ExecuteScalar() != null)
                     {
                         dataFields[11] = 1;
@@ -895,7 +908,7 @@ namespace BuBuJi_DataAnalysisTool
         }
         #endregion
 
-        #region 统计-日期列表/基站列表/设备列表、设备档案信息
+        #region 统计-日期列表、基站列表、设备列表、设备档案信息
 
         // 总数、日期/基站/设备列表更新
         private void MainInfoListUpdate()
@@ -983,6 +996,10 @@ namespace BuBuJi_DataAnalysisTool
             string whereDate = "";
             DateTime date = DateTime.Now;
             DataTable tbZeroStep_Devs, tbAllRpt_DevSteps;
+            DataRow[] selRows;
+            int stepStat, stepStatLast;
+            int tmpCnt, stepErrorCnt;
+            StringBuilder strBuilder = new StringBuilder();
 
             if (chkDate.Checked && DateTime.TryParse(txtDate.Text, out date))
             {
@@ -991,23 +1008,108 @@ namespace BuBuJi_DataAnalysisTool
 
             // 读出档案列表
             ReadDocInfo();
-            
+
             // 查询步数为0档案
             sqlText = "select distinct deviceId from tblLog "
                 + whereDate + (whereDate != "" ? " and stepSum = 0 " : " where stepSum = 0")
                 + " order by deviceId";
             tbZeroStep_Devs = _sqldb.ExecuteReaderToDataTable(sqlText);
 
-            // 查询所有上报的档案和步数
-            sqlText = "select deviceId, stepSum from tblLog "
+            // 查询所有上报的设备ID、步数、时间
+            sqlText = "select deviceId, stepSum, date from tblLog "
                 + whereDate + (whereDate != "" ? " and isRepeatRpt = 0 " : " where isRepeatRpt = 0")
                 + " order by deviceId, datetime";
             tbAllRpt_DevSteps = _sqldb.ExecuteReaderToDataTable(sqlText);
 
-            // 统计步数状态
+            // 统计-上报次数、步数状态
+            foreach (DataRow row in tbDoc.Rows)
+            {
+                selRows = tbAllRpt_DevSteps.Select("deviceId = " + row["设备ID"]);
+                if (selRows.Length > 0)
+                {
+                    if (whereDate != "")
+                    {
+                        row[1] = selRows.Length;     // total
+                        row[2] = selRows.Length;     // day1
+                    }
+                    else
+                    {
+                        row[1] = selRows.Length;     // total , day1 -> day5
+                        row[2] = selRows.Count(q => Convert.ToDateTime(q[2]).ToString("yyyy-MM-dd") == dgvDoc.Columns[2].HeaderText);
+                        row[3] = selRows.Count(q => Convert.ToDateTime(q[2]).ToString("yyyy-MM-dd") == dgvDoc.Columns[3].HeaderText);
+                        row[4] = selRows.Count(q => Convert.ToDateTime(q[2]).ToString("yyyy-MM-dd") == dgvDoc.Columns[4].HeaderText);
+                        row[5] = selRows.Count(q => Convert.ToDateTime(q[2]).ToString("yyyy-MM-dd") == dgvDoc.Columns[5].HeaderText);
+                        row[6] = selRows.Count(q => Convert.ToDateTime(q[2]).ToString("yyyy-MM-dd") == dgvDoc.Columns[6].HeaderText);
+                    }
 
+                    // having stepSum = 0 
+                    if (tbZeroStep_Devs.Select("deviceId = " + row["设备ID"]).Length > 0)
+                    {
+                        strBuilder.Clear();
+                        stepStatLast = 0xFF;
+                        foreach (DataRow dr in selRows)
+                        {
+                            stepStat = ((long)dr[1] == 0 ? 0 : 1);
+                            if (stepStat != stepStatLast)
+                            {
+                                stepStatLast = stepStat;
+                                strBuilder.Append(stepStat + "->");
+                            }
+                        }
+                        row[7] = strBuilder.ToString(0, strBuilder.Length - 2);
+                    }
+                }
+                else
+                {
+                    row[1] = 0;     // total
+                    row[2] = 0;     // day1 -> day5
+                    row[3] = 0;
+                    row[4] = 0;
+                    row[5] = 0;
+                    row[6] = 0;
+                    row[7] = "";    // stepStatus
+                }
+            }
 
-            // 更新数据库
+            // 统计-未上报的设备数
+            strBuilder.Clear();
+            tmpCnt = tbDoc.Select(tbDoc.Columns[1].ColumnName + " = 0").Length;
+            if (whereDate != "")
+            {
+                strBuilder.AppendLine(dgvDoc.Columns[2].HeaderText + " 未上报 " 
+                    + tbDoc.Select("第1天上报 = 0").Length);
+            }
+            else
+            {
+                for(int i = 2; i < 5 + 2; i++)
+                {
+                    if (dgvDoc.Columns[i].Visible)
+                    {
+                        strBuilder.AppendLine(dgvDoc.Columns[i].HeaderText + " 未上报 "
+                        + tbDoc.Select(tbDoc.Columns[i].ColumnName + " = 0").Length);
+                    }
+                }
+            }
+            UpdateCurrDocCnt(tbDoc.Rows.Count, tmpCnt);
+            ShowMsg("\r\n档案中未上报的设备数：" + tmpCnt + "\r\n" + strBuilder.ToString(), Color.Red, false);
+
+            // 统计-不在档案中的设备
+            tmpCnt = 0;
+            strBuilder.Clear();
+            sqlText = "select distinct deviceId from tblLog " + whereDate + " order by deviceId";
+            tbAllRpt_DevSteps = _sqldb.ExecuteReaderToDataTable(sqlText);
+            foreach(DataRow row in tbAllRpt_DevSteps.Rows)
+            {
+                if (tbDoc.Select("设备ID = " + row[0]).Length == 0)
+                {
+                    tmpCnt++;
+                    strBuilder.Append(tmpCnt + " " + row[0] + "\r\n");
+                }
+            }
+            if(tmpCnt > 0)
+            {
+                ShowMsg("\r\n不在档案中的设备数：" + tmpCnt + "\r\n" + strBuilder.ToString(), Color.Red, false);
+            }
 
         }
 
@@ -1015,7 +1117,7 @@ namespace BuBuJi_DataAnalysisTool
         private void btQueryCountInfo_Click(object sender, EventArgs e)
         {
             DateTime timeStart = DateTime.Now;
-            ShowMsg("统计中...\r\n", Color.Blue, false);
+            ShowMsg("统计中...\r\n", Color.Blue, false, true);
 
             // 总数、日期/基站/设备列表更新
             MainInfoListUpdate();
@@ -1554,7 +1656,8 @@ namespace BuBuJi_DataAnalysisTool
         // 清除档案视图
         private void btClearDocView_Click(object sender, EventArgs e)
         {
-
+            _currDocCnt = 0;
+            UpdateCurrDocCnt(_currDocCnt, 0);
             tbDoc.Clear();
             rtbMsg.Clear();
         }
