@@ -45,7 +45,7 @@ namespace BuBuJi_DataAnalysisTool
         private int _recordCnt;
         private string _currSelCondition;
         private int _currDocCnt;
-
+        
         public FormMain()
         {
             InitializeComponent();
@@ -289,6 +289,7 @@ namespace BuBuJi_DataAnalysisTool
                 sql = "CREATE INDEX IF NOT EXISTS idx ON tblLog ( " +
                     "deviceId," +
                     "stationId," +
+                    "deviceVoltage," +
                     "frameSn," +
                     "stepSum," +
                     "date," +
@@ -300,7 +301,8 @@ namespace BuBuJi_DataAnalysisTool
                 // table tblDoc
                 sql = "CREATE TABLE IF NOT EXISTS tblDoc ( " +
                     "id            INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    "deviceId      INTEGER (8)," +
+                    "deviceId      INTEGER (8)" +
+                    /*
                     "reportCnt     INTEGER (4)," +
                     "rptCntDay1    INTEGER (4)," +
                     "rptCntDay2    INTEGER (4)," +
@@ -308,6 +310,7 @@ namespace BuBuJi_DataAnalysisTool
                     "rptCntDay4    INTEGER (4)," +
                     "rptCntDay5    INTEGER (4)," +
                     "stepStatus    TEXT" +
+                     * */
                 ")";
                 _sqldb.ExecuteNonQuery(sql);
 
@@ -616,6 +619,7 @@ namespace BuBuJi_DataAnalysisTool
                         repeatCnt = 0xFFFF;
                     }
 
+#if true
                     // 重复上报标记设置
                     time = Convert.ToDateTime(dataFields[8]);
                     cmd.CommandText = "select id from tblLog where "
@@ -629,6 +633,7 @@ namespace BuBuJi_DataAnalysisTool
                     {
                         dataFields[11] = 1;
                     }
+#endif
 
                     // 提交插入命令
                     cmd.CommandText = GetInsertSqlText(dataFields);
@@ -764,18 +769,17 @@ namespace BuBuJi_DataAnalysisTool
 
             if (chkRmSameDev.Checked)
             {
-                conditon += " group by deviceId";
+                conditon += " group by deviceId having min(deviceVoltage)"; // + " order by deviceId, datetime asc";
             }
             else if (chkRmSameReport.Checked)
             {
-                conditon += (conditon != "" ? " and isRepeatRpt = 0" : " where isRepeatRpt = 0");
+                conditon += (conditon != "" ? " and isRepeatRpt = 0" : " where isRepeatRpt = 0")
+                    + " order by deviceId, datetime asc";
             }
             else
             {
                 conditon += "";
             }
-
-            conditon += " order by deviceId, datetime asc";
 
             return conditon;
         }
@@ -803,16 +807,20 @@ namespace BuBuJi_DataAnalysisTool
             _currPage = 0;
             QuerySpecifyPage(_currPage + 1);
 
+            tabControl1.SelectedTab = tabPage1;
+
             ShowMsg("查询完成！ 用时 " +
                     (DateTime.Now - timeStart).TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
         }
         #endregion
 
-        #region 导出查询结果、选择设备id/基站id/日期
+        #region 查询结果右键-导出、选择设备id/基站id/日期
 
-        private void cMenuLog_ItemClicked(object sender, EventArgs e)
+        private void cMenuLog_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
-            switch (((ToolStripMenuItem)sender).Text)
+            e.ClickedItem.Owner.Visible = false;
+
+            switch (e.ClickedItem.Text)
             {
                 case "导出本页":
                     {
@@ -880,7 +888,7 @@ namespace BuBuJi_DataAnalysisTool
 
                 case "选择当前行-设备ID":
                     {
-                        if (dgvLog.SelectedRows[0].Index < 0) return;
+                        if (dgvLog.SelectedRows.Count == 0) return;
 
                         txtDeviceId.Text = dgvLog.Rows[dgvLog.SelectedRows[0].Index].Cells[0].Value.ToString();
                     }
@@ -888,7 +896,7 @@ namespace BuBuJi_DataAnalysisTool
 
                 case "选择当前行-基站ID":
                     {
-                        if (dgvLog.SelectedRows[0].Index < 0) return;
+                        if (dgvLog.SelectedRows.Count == 0) return;
 
                         txtStationId.Text = dgvLog.Rows[dgvLog.SelectedRows[0].Index].Cells[3].Value.ToString();
                     }
@@ -896,7 +904,7 @@ namespace BuBuJi_DataAnalysisTool
 
                 case "选择当前行-日期":
                     {
-                        if (dgvLog.SelectedRows[0].Index < 0) return;
+                        if (dgvLog.SelectedRows.Count == 0) return;
 
                         txtDate.Text = Convert.ToDateTime(dgvLog.Rows[dgvLog.SelectedRows[0].Index].Cells[6].Value).ToString("yyyy-MM-dd");
                     }
@@ -910,7 +918,7 @@ namespace BuBuJi_DataAnalysisTool
 
         #region 统计-日期列表、基站列表、设备列表、设备档案信息
 
-        // 总数、日期/基站/设备列表更新
+        // 统计-总数、日期/基站/设备列表
         private void MainInfoListUpdate()
         {
             string sqlText = "";
@@ -988,18 +996,18 @@ namespace BuBuJi_DataAnalysisTool
             UpdateGrpDevices(tbDevices.Rows.Count, whereDate);
         }
 
-        // 设备档案信息更新
+        // 统计-设备档案信息
         private void DocInfoUpdate()
         {
             string sqlText = "";
             SQLiteDataReader reader;
             string whereDate = "";
             DateTime date = DateTime.Now;
-            DataTable tbZeroStep_Devs, tbAllRpt_DevSteps;
             DataRow[] selRows;
             int stepStat, stepStatLast;
-            int tmpCnt, stepErrorCnt;
+            int tmpCnt, stepErrCnt, dayUnRptCnt;
             StringBuilder strBuilder = new StringBuilder();
+            DataTable tbZeroStep_Devs = null, tbAllRpt_Devs = null, tbAllRpt_DevSteps = null;
 
             if (chkDate.Checked && DateTime.TryParse(txtDate.Text, out date))
             {
@@ -1027,22 +1035,16 @@ namespace BuBuJi_DataAnalysisTool
                 selRows = tbAllRpt_DevSteps.Select("deviceId = " + row["设备ID"]);
                 if (selRows.Length > 0)
                 {
-                    if (whereDate != "")
+                    // total
+                    row[1] = selRows.Length;     
+
+                    // day1 -> day5
+                    for (int i = 2; i < 5 + 2 && dgvDoc.Columns[i].Visible; i++)
                     {
-                        row[1] = selRows.Length;     // total
-                        row[2] = selRows.Length;     // day1
-                    }
-                    else
-                    {
-                        row[1] = selRows.Length;     // total , day1 -> day5
-                        row[2] = selRows.Count(q => Convert.ToDateTime(q[2]).ToString("yyyy-MM-dd") == dgvDoc.Columns[2].HeaderText);
-                        row[3] = selRows.Count(q => Convert.ToDateTime(q[2]).ToString("yyyy-MM-dd") == dgvDoc.Columns[3].HeaderText);
-                        row[4] = selRows.Count(q => Convert.ToDateTime(q[2]).ToString("yyyy-MM-dd") == dgvDoc.Columns[4].HeaderText);
-                        row[5] = selRows.Count(q => Convert.ToDateTime(q[2]).ToString("yyyy-MM-dd") == dgvDoc.Columns[5].HeaderText);
-                        row[6] = selRows.Count(q => Convert.ToDateTime(q[2]).ToString("yyyy-MM-dd") == dgvDoc.Columns[6].HeaderText);
+                        row[i] = selRows.Count(q => Convert.ToDateTime(q[2]).ToString("yyyy-MM-dd") == dgvDoc.Columns[i].HeaderText);
                     }
 
-                    // having stepSum = 0 
+                    // stepStatus
                     if (tbZeroStep_Devs.Select("deviceId = " + row["设备ID"]).Length > 0)
                     {
                         strBuilder.Clear();
@@ -1074,41 +1076,30 @@ namespace BuBuJi_DataAnalysisTool
             // 统计-未上报的设备数
             strBuilder.Clear();
             tmpCnt = tbDoc.Select(tbDoc.Columns[1].ColumnName + " = 0").Length;
-            if (whereDate != "")
+            for (int i = 2; i < 5 + 2 && dgvDoc.Columns[i].Visible; i++)
             {
-                strBuilder.AppendLine(dgvDoc.Columns[2].HeaderText + " 未上报 " 
-                    + tbDoc.Select("第1天上报 = 0").Length);
-            }
-            else
-            {
-                for(int i = 2; i < 5 + 2; i++)
-                {
-                    if (dgvDoc.Columns[i].Visible)
-                    {
-                        strBuilder.AppendLine(dgvDoc.Columns[i].HeaderText + " 未上报 "
-                        + tbDoc.Select(tbDoc.Columns[i].ColumnName + " = 0").Length);
-                    }
-                }
+                dayUnRptCnt = tbDoc.Select(tbDoc.Columns[i].ColumnName + " = 0").Length;
+                strBuilder.AppendLine(dgvDoc.Columns[i].HeaderText + "  " + dayUnRptCnt.ToString().PadRight(13));
             }
             UpdateCurrDocCnt(tbDoc.Rows.Count, tmpCnt);
-            ShowMsg("\r\n档案中未上报的设备数：" + tmpCnt + "\r\n" + strBuilder.ToString(), Color.Red, false);
+            ShowMsg("\r\n日期        未上报设备数 步数异常设备数\r\n" + strBuilder.ToString(), Color.Red, false);
 
             // 统计-不在档案中的设备
             tmpCnt = 0;
             strBuilder.Clear();
             sqlText = "select distinct deviceId from tblLog " + whereDate + " order by deviceId";
-            tbAllRpt_DevSteps = _sqldb.ExecuteReaderToDataTable(sqlText);
-            foreach(DataRow row in tbAllRpt_DevSteps.Rows)
+            tbAllRpt_Devs = _sqldb.ExecuteReaderToDataTable(sqlText);
+            foreach (DataRow row in tbAllRpt_Devs.Rows)
             {
                 if (tbDoc.Select("设备ID = " + row[0]).Length == 0)
                 {
                     tmpCnt++;
-                    strBuilder.Append(tmpCnt + " " + row[0] + "\r\n");
+                    strBuilder.Append(tmpCnt.ToString().PadRight(6) + row[0] + "\r\n");
                 }
             }
             if(tmpCnt > 0)
             {
-                ShowMsg("\r\n不在档案中的设备数：" + tmpCnt + "\r\n" + strBuilder.ToString(), Color.Red, false);
+                ShowMsg("\r\n序号  不在档案中的设备\r\n" + strBuilder.ToString(), Color.Red, false);
             }
 
         }
@@ -1124,6 +1115,8 @@ namespace BuBuJi_DataAnalysisTool
 
             // 设备每天上报次数/步数状态
             DocInfoUpdate();
+
+            tabControl1.SelectedTab = tabPage2;
 
             ShowMsg("统计完成！ 用时 "
                 + (DateTime.Now - timeStart).TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
@@ -1428,7 +1421,7 @@ namespace BuBuJi_DataAnalysisTool
         }
         #endregion
 
-        #region 设备档案信息-导入、统计、导出
+        #region 设备档案信息-导入、删除、导出
         // 导入档案
         private void btDocImport_Click(object sender, EventArgs e)
         {
@@ -1499,6 +1492,8 @@ namespace BuBuJi_DataAnalysisTool
                     {
                         continue;
                     }
+
+                    /*
                     // ReportCnt
                     dataFields[2] = 0;
                     // RptDay1-5
@@ -1509,6 +1504,7 @@ namespace BuBuJi_DataAnalysisTool
                     dataFields[7] = 0;
                     // Stepstatus
                     dataFields[8] = "";
+                     * */
 
                     // 重复档案检查
                     cmd.CommandText = "select id from tblDoc where deviceId = " + dataFields[1];
@@ -1520,7 +1516,8 @@ namespace BuBuJi_DataAnalysisTool
                     // 提交插入命令
                     cmd.CommandText = "insert into tblDoc values ("
                         + "NULL,"   // fileds[0] id列自动生成
-                        + dataFields[1] + ","
+                        + dataFields[1] + 
+                        /*
                         + dataFields[2] + ","
                         + dataFields[3] + ","
                         + dataFields[4] + ","
@@ -1528,6 +1525,7 @@ namespace BuBuJi_DataAnalysisTool
                         + dataFields[6] + ","
                         + dataFields[7] + ","
                         + "'" + dataFields[8] + "'" + 
+                         * */
                         ")";
                     cmd.ExecuteNonQuery();
 
@@ -1588,6 +1586,8 @@ namespace BuBuJi_DataAnalysisTool
                 row = tbDoc.NewRow();
                 row.BeginEdit();
                 row["设备ID"] = reader.GetInt64(1);
+
+                /*
                 if (dates.Count > 0)
                 {
                     row["总上报次数"] = reader.GetInt32(2);
@@ -1598,32 +1598,38 @@ namespace BuBuJi_DataAnalysisTool
                     row["第5天上报"] = reader.GetInt32(7);
                     row["步数状态"] = reader.GetString(8);
                 }
+                 * */
+
                 row.EndEdit();
                 tbDoc.Rows.Add(row);
             }
 
-            // change view's columns
-            if (dates.Count == 0)
+            // disable view's columns visible
+            for (int i = 1; i < 8; i++)
             {
-                for (int i = 1; i < 8; i++)
-                {
-                    dgvDoc.Columns[i].Visible = false;
-                }
+                dgvDoc.Columns[i].Visible = false;
             }
-            else
+
+            // set view's columns visible
+            if (dates.Count > 0)
             {
                 // reportCnt
                 dgvDoc.Columns[1].Visible = true; 
                 // rptDay1~rptDay5
-                for (int i = 0; i < 5 && i < dates.Count; i++ )
+                if(chkDate.Checked && txtDate.Text != "")
                 {
-                    dgvDoc.Columns[i + 2].Visible = true;
-                    dgvDoc.Columns[i + 2].HeaderText = dates[i];
+                    dgvDoc.Columns[2].Visible = true;
+                    dgvDoc.Columns[2].HeaderText = txtDate.Text;
                 }
-                for (int i = dates.Count + 2; i < 7; i++ )
+                else
                 {
-                    dgvDoc.Columns[i].Visible = false;
+                    for (int i = 0; i < 5 && i < dates.Count; i++)
+                    {
+                        dgvDoc.Columns[i + 2].Visible = true;
+                        dgvDoc.Columns[i + 2].HeaderText = dates[i];
+                    }
                 }
+                
                 // stepStatus
                 dgvDoc.Columns[7].Visible = true;       
             }
@@ -1661,6 +1667,47 @@ namespace BuBuJi_DataAnalysisTool
             tbDoc.Clear();
             rtbMsg.Clear();
         }
+
+        // 右键-导出档案信息、选择设备ID
+        private void cMenuDocs_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            e.ClickedItem.Owner.Visible = false;
+
+            switch (e.ClickedItem.Text)
+            {
+                case "导出列表":
+                    {
+                        if (tbDoc.Rows.Count == 0) return;
+
+                        // 选择文件位置
+                        SaveFileDialog savefileDlg = new SaveFileDialog();
+                        savefileDlg.Filter = "*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
+                        savefileDlg.DefaultExt = ".txt";
+                        savefileDlg.FileName = "XX查询结果-第" + _currPage + "页";
+
+                        if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
+
+                        // 导出
+                        DataGridViewToFile(dgvDoc, savefileDlg.FileName);
+
+                        ShowMsg("导出档案信息完成！\r\n", Color.Green, false);
+                    }
+                    break;
+
+
+                case "选择当前行-设备ID":
+                    {
+                        if (dgvDoc.SelectedRows.Count == 0) return;
+
+                        txtDeviceId.Text = dgvDoc.Rows[dgvDoc.SelectedRows[0].Index].Cells[0].Value.ToString();
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
         #endregion
     }
 }

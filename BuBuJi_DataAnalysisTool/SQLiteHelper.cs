@@ -173,7 +173,7 @@ namespace BuBuJi_DataAnalysisTool
         public DataTable ExecuteReaderToDataTable(string sqlText, params SQLiteParameter[] parameters)
         {
             DataTable tb = new DataTable();
-
+            
             using (SQLiteConnection con = new SQLiteConnection(_connectionString))
             {
                 using (SQLiteCommand cmd = new SQLiteCommand(sqlText, con))

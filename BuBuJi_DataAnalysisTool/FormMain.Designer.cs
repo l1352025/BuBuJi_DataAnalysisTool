@@ -330,42 +330,38 @@
             this.选择当前行基站IDToolStripMenuItem,
             this.选择当前行日期ToolStripMenuItem});
             this.cMenuLogs.Name = "cMenuLogs";
-            this.cMenuLogs.Size = new System.Drawing.Size(179, 114);
+            this.cMenuLogs.Size = new System.Drawing.Size(179, 136);
+            this.cMenuLogs.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.cMenuLog_ItemClicked);
             // 
             // 导出本页ToolStripMenuItem
             // 
             this.导出本页ToolStripMenuItem.Name = "导出本页ToolStripMenuItem";
             this.导出本页ToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
             this.导出本页ToolStripMenuItem.Text = "导出本页";
-            this.导出本页ToolStripMenuItem.Click += new System.EventHandler(this.cMenuLog_ItemClicked);
             // 
             // 导出所有ToolStripMenuItem
             // 
             this.导出所有ToolStripMenuItem.Name = "导出所有ToolStripMenuItem";
             this.导出所有ToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
             this.导出所有ToolStripMenuItem.Text = "导出所有";
-            this.导出所有ToolStripMenuItem.Click += new System.EventHandler(this.cMenuLog_ItemClicked);
             // 
             // 选择当前行设备IDToolStripMenuItem
             // 
             this.选择当前行设备IDToolStripMenuItem.Name = "选择当前行设备IDToolStripMenuItem";
             this.选择当前行设备IDToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
             this.选择当前行设备IDToolStripMenuItem.Text = "选择当前行-设备ID";
-            this.选择当前行设备IDToolStripMenuItem.Click += new System.EventHandler(this.cMenuLog_ItemClicked);
             // 
             // 选择当前行基站IDToolStripMenuItem
             // 
             this.选择当前行基站IDToolStripMenuItem.Name = "选择当前行基站IDToolStripMenuItem";
             this.选择当前行基站IDToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
             this.选择当前行基站IDToolStripMenuItem.Text = "选择当前行-基站ID";
-            this.选择当前行基站IDToolStripMenuItem.Click += new System.EventHandler(this.cMenuLog_ItemClicked);
             // 
             // 选择当前行日期ToolStripMenuItem
             // 
             this.选择当前行日期ToolStripMenuItem.Name = "选择当前行日期ToolStripMenuItem";
             this.选择当前行日期ToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
             this.选择当前行日期ToolStripMenuItem.Text = "选择当前行-日期";
-            this.选择当前行日期ToolStripMenuItem.Click += new System.EventHandler(this.cMenuLog_ItemClicked);
             // 
             // dsLog
             // 
@@ -566,7 +562,7 @@
             // 
             this.btQuery.Location = new System.Drawing.Point(889, 18);
             this.btQuery.Name = "btQuery";
-            this.btQuery.Size = new System.Drawing.Size(100, 23);
+            this.btQuery.Size = new System.Drawing.Size(101, 23);
             this.btQuery.TabIndex = 1;
             this.btQuery.Text = "查询";
             this.btQuery.UseVisualStyleBackColor = true;
@@ -1318,6 +1314,7 @@
             this.第4天上报DataGridViewTextBoxColumn,
             this.第5天上报DataGridViewTextBoxColumn,
             this.步数状态DataGridViewTextBoxColumn});
+            this.dgvDoc.ContextMenuStrip = this.cMenuDocs;
             this.dgvDoc.DataMember = "tblDoc";
             this.dgvDoc.DataSource = this.dsLog;
             this.dgvDoc.EditMode = System.Windows.Forms.DataGridViewEditMode.EditProgrammatically;
@@ -1402,7 +1399,7 @@
             this.步数状态DataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle16;
             this.步数状态DataGridViewTextBoxColumn.HeaderText = "步数状态";
             this.步数状态DataGridViewTextBoxColumn.Name = "步数状态DataGridViewTextBoxColumn";
-            this.步数状态DataGridViewTextBoxColumn.Width = 90;
+            this.步数状态DataGridViewTextBoxColumn.Width = 150;
             // 
             // cMenuDocs
             // 
@@ -1411,6 +1408,7 @@
             this.选择当前行设备IDToolStripMenuItem1});
             this.cMenuDocs.Name = "cMenuDocs";
             this.cMenuDocs.Size = new System.Drawing.Size(179, 48);
+            this.cMenuDocs.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.cMenuDocs_ItemClicked);
             // 
             // 导出列表ToolStripMenuItem
             // 
@@ -1580,6 +1578,9 @@
         private System.Data.DataColumn tblDoc_Day5;
         private System.Data.DataColumn tblDoc_StepStatus;
         private System.Windows.Forms.Button btClearDocView;
+        private System.Windows.Forms.ContextMenuStrip cMenuDocs;
+        private System.Windows.Forms.ToolStripMenuItem 导出列表ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 选择当前行设备IDToolStripMenuItem1;
         private System.Windows.Forms.DataGridViewTextBoxColumn 设备IDDataGridViewTextBoxColumn2;
         private System.Windows.Forms.DataGridViewTextBoxColumn 总上报次数DataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn 第1天上报DataGridViewTextBoxColumn;
@@ -1588,9 +1589,6 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn 第4天上报DataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn 第5天上报DataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn 步数状态DataGridViewTextBoxColumn;
-        private System.Windows.Forms.ContextMenuStrip cMenuDocs;
-        private System.Windows.Forms.ToolStripMenuItem 导出列表ToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem 选择当前行设备IDToolStripMenuItem1;
     }
 }
 
