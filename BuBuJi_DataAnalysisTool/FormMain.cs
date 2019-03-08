@@ -257,7 +257,7 @@ namespace BuBuJi_DataAnalysisTool
         }
         #endregion
 
-        #region 数据库操作：创建、插入
+        #region 数据库创建
         private void InitialDb()
         {
             string dbName = Path.GetDirectoryName(Application.ExecutablePath) + "\\database.db";
@@ -285,6 +285,7 @@ namespace BuBuJi_DataAnalysisTool
                 ")";
                 _sqldb.ExecuteNonQuery(sql);
 
+#if true
                 // index idx on tblLog
                 sql = "CREATE INDEX IF NOT EXISTS idx ON tblLog ( " +
                     "deviceId," +
@@ -297,6 +298,7 @@ namespace BuBuJi_DataAnalysisTool
                     "isRepeatRpt" + 
                 ")";
                 _sqldb.ExecuteNonQuery(sql);
+#endif
 
                 // table tblDoc
                 sql = "CREATE TABLE IF NOT EXISTS tblDoc ( " +
@@ -321,26 +323,6 @@ namespace BuBuJi_DataAnalysisTool
                 _sqldb.ExecuteNonQuery(sql);
 
             }
-        }
-
-        private string GetInsertSqlText(object[] fileds)
-        {
-            string sqlText;
-
-            sqlText = "insert into tblLog values ("
-                + "NULL,"   // fileds[0] id列自动生成
-                + fileds[1] + ","
-                + fileds[2] + ","
-                + fileds[3] + ","
-                + fileds[4] + ","
-                + fileds[5] + ","
-                + fileds[6] + ","
-                + "'" + fileds[7] + "',"
-                + "'" + fileds[8] + "',"
-                + fileds[9] + ","
-                + fileds[10] + ","
-                + fileds[11] + ")";
-            return sqlText;
         }
 
         public DataTable ExcelToDataTable(string dataSource, string tblName)
@@ -502,12 +484,18 @@ namespace BuBuJi_DataAnalysisTool
             }
             SQLiteTransaction trans = con.BeginTransaction();
             SQLiteCommand cmd = new SQLiteCommand(con);
+            SQLiteParameter[] values = new SQLiteParameter[11];
+            for (int i = 0; i < values.Length; i++ )
+            {
+                values[i] = new SQLiteParameter(DbType.String);
+            }
+            //values[0].Command.CommandText = "insert into tblLog values ( NULL,?,?,?,?,?,?,?,?,?.?,?)";
+            cmd.CommandText = "insert into tblLog values ( NULL,@c1,@c2,@c3,@c4,@c5,@c6,@c7,@c8,@c9,@c10,@c11)";
 
             while ((strReadStr = sr.ReadLine()) != null)
             {
                 try
                 {
-#if true
                     index = strReadStr.IndexOf("\"di\"");
                     if (index < 0) continue;
 
@@ -516,90 +504,42 @@ namespace BuBuJi_DataAnalysisTool
 
                     index += 6;
                     // devId
-                    dataFields[1] = strReadStr.Substring(index, 12);
+                    values[0].Value = strReadStr.Substring(index, 12);
                     index += 20;
                     // devStatus
-                    dataFields[2] = strReadStr.Substring(index, 1);
+                    values[1].Value = strReadStr.Substring(index, 1);
                     index += 9;
                     // devVbat
-                    dataFields[3] = strReadStr.Substring(index, 3);
+                    values[2].Value = strReadStr.Substring(index, 3);
                     index += 11;
                     // stationId
-                    dataFields[4] = strReadStr.Substring(index, 12);
+                    values[3].Value = strReadStr.Substring(index, 12);
                     index += 20;
                     // signal
                     len = strReadStr.IndexOf("\"", index) - index;
-                    dataFields[5] = strReadStr.Substring(index, len);
+                    values[4].Value = strReadStr.Substring(index, len);
                     index += len + 8;
                     // steps
                     len = strReadStr.IndexOf("\"", index) - index;
-                    dataFields[6] = strReadStr.Substring(index, len);
+                    values[5].Value = strReadStr.Substring(index, len);
                     index += len + 8;
                     // date
-                    dataFields[7] = strReadStr.Substring(index, 10);
+                    values[6].Value = strReadStr.Substring(index, 10);
                     // time
-                    dataFields[8] = strReadStr.Substring(index, 19);
+                    values[7].Value = strReadStr.Substring(index, 19);
                     index += 30;
                     // version
                     len = strReadStr.IndexOf("\"", index) - index;
-                    dataFields[9] = strReadStr.Substring(index, len);
+                    values[8].Value = strReadStr.Substring(index, len);
                     index += len + 8;
                     // frameSn
                     len = strReadStr.IndexOf("\"", index) - index;
-                    dataFields[10] = strReadStr.Substring(index, len);
+                    values[9].Value = strReadStr.Substring(index, len);
 
-                    // isRepeatRpt 列，默认0-没有重复
-                    dataFields[11] = 0;
-#endif
+                    // isRepeatRpt 列，0-没有重复, 1 - 重复
+                    values[10].Value = 1;
 
 #if fa
-                    index = strReadStr.IndexOf("\"di\"");
-                    if (index < 0) continue;
-
-                    strRead.Clear();
-                    strRead.Append(strReadStr);
-
-                    // id 列自动生成，此处用来统计重复次数
-                    dataFields[0] = repeatCnt;
-
-                    index += 6;
-                    // devId
-                    dataFields[1] = strRead.ToString(index, 12);
-                    index += 20;
-                    // devStatus
-                    dataFields[2] = strRead.ToString(index, 1);
-                    index += 9;
-                    // devVbat
-                    dataFields[3] = strRead.ToString(index, 3);
-                    index += 11;
-                    // stationId
-                    dataFields[4] = strRead.ToString(index, 12);
-                    index += 20;
-                    // signal
-                    len = strReadStr.IndexOf("\"", index) - index;
-                    dataFields[5] = strRead.ToString(index, len);
-                    index += len + 8;
-                    // steps
-                    len = strReadStr.IndexOf("\"", index) - index;
-                    dataFields[6] = strRead.ToString(index, len);
-                    index += len + 8;
-                    // date
-                    dataFields[7] = strRead.ToString(index, 10);
-                    // time
-                    dataFields[8] = strRead.ToString(index, 19);
-                    index += 30;
-                    // version
-                    len = strReadStr.IndexOf("\"", index) - index;
-                    dataFields[9] = strRead.ToString(index, len);
-                    index += len + 8;
-                    // frameSn
-                    len = strReadStr.IndexOf("\"", index) - index;
-                    dataFields[10] = strRead.ToString(index, len);
-
-                    // isRepeatRpt 列，默认0-没有重复
-                    dataFields[11] = 0;
-#endif
-
                     if (repeatCnt != 0xFFFF)
                     {
                         // 重复导入检查, 前2条重复则停止导入
@@ -618,8 +558,9 @@ namespace BuBuJi_DataAnalysisTool
                             
                         repeatCnt = 0xFFFF;
                     }
+#endif
 
-#if true
+#if fa
                     // 重复上报标记设置
                     time = Convert.ToDateTime(dataFields[8]);
                     cmd.CommandText = "select id from tblLog where "
@@ -636,7 +577,8 @@ namespace BuBuJi_DataAnalysisTool
 #endif
 
                     // 提交插入命令
-                    cmd.CommandText = GetInsertSqlText(dataFields);
+                    //cmd.CommandText = values[0].Command.CommandText;
+                    cmd.Parameters.AddRange(values);
                     cmd.ExecuteNonQuery();
 
                     cnt++;
@@ -769,18 +711,18 @@ namespace BuBuJi_DataAnalysisTool
 
             if (chkRmSameDev.Checked)
             {
-                conditon += " group by deviceId having min(deviceVoltage)"; // + " order by deviceId, datetime asc";
+                conditon += " group by deviceId having min(deviceVoltage)";
             }
             else if (chkRmSameReport.Checked)
             {
-                conditon += (conditon != "" ? " and isRepeatRpt = 0" : " where isRepeatRpt = 0")
-                    + " order by deviceId, datetime asc";
+                conditon += (conditon != "" ? " and isRepeatRpt = 0" : " where isRepeatRpt = 0");
             }
             else
             {
                 conditon += "";
             }
-
+            conditon += " order by deviceId, datetime asc";
+            
             return conditon;
         }
 
