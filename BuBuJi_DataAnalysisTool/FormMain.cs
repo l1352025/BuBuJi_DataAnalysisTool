@@ -484,13 +484,26 @@ namespace BuBuJi_DataAnalysisTool
             }
             SQLiteTransaction trans = con.BeginTransaction();
             SQLiteCommand cmd = new SQLiteCommand(con);
-            SQLiteParameter[] values = new SQLiteParameter[11];
-            for (int i = 0; i < values.Length; i++ )
-            {
-                values[i] = new SQLiteParameter(DbType.String);
-            }
-            //values[0].Command.CommandText = "insert into tblLog values ( NULL,?,?,?,?,?,?,?,?,?.?,?)";
-            cmd.CommandText = "insert into tblLog values ( NULL,@c1,@c2,@c3,@c4,@c5,@c6,@c7,@c8,@c9,@c10,@c11)";
+            SQLiteParameter[] values = new SQLiteParameter[12];
+            values[0] = new SQLiteParameter("@id", DbType.Int64);
+            values[1] = new SQLiteParameter("@deviceId", DbType.Int64);
+            values[2] = new SQLiteParameter("@deviceStatus", DbType.Byte);
+            values[3] = new SQLiteParameter("@deviceVoltage", DbType.Decimal);
+            values[4] = new SQLiteParameter("@stationId", DbType.Int64);
+            values[5] = new SQLiteParameter("@signalVal", DbType.Byte);
+            values[6] = new SQLiteParameter("@stepSum", DbType.Int64);
+            values[7] = new SQLiteParameter("@date", DbType.DateTime);
+            values[8] = new SQLiteParameter("@dateTime", DbType.DateTime);
+            values[9] = new SQLiteParameter("@version", DbType.Byte);
+            values[10] = new SQLiteParameter("@frameSn", DbType.Byte);
+            values[11] = new SQLiteParameter("@isRepeatRpt", DbType.Byte);
+            cmd.Parameters.AddRange(values);
+            cmd.Transaction = trans;
+            cmd.CommandText = "insert into tblLog" 
+                + " ( id, deviceId, deviceStatus, deviceVoltage, stationId, " 
+                + "signalVal, stepSum, date, dateTime, version, frameSn, isRepeatRpt )"
+                + " values ( @id, @deviceId, @deviceStatus, @deviceVoltage, @stationId, " 
+                + "@signalVal, @stepSum, @date, @dateTime, @version, @frameSn, @isRepeatRpt )";
 
             while ((strReadStr = sr.ReadLine()) != null)
             {
@@ -499,45 +512,44 @@ namespace BuBuJi_DataAnalysisTool
                     index = strReadStr.IndexOf("\"di\"");
                     if (index < 0) continue;
 
-                    // id 列自动生成，此处用来统计重复次数
-                    dataFields[0] = repeatCnt;
+                    // id 列自动生成
+                    //values[0].Value = 0;
 
                     index += 6;
                     // devId
-                    values[0].Value = strReadStr.Substring(index, 12);
+                    values[1].Value = Convert.ToInt64(strReadStr.Substring(index, 12));
                     index += 20;
                     // devStatus
-                    values[1].Value = strReadStr.Substring(index, 1);
+                    values[2].Value = Convert.ToByte(strReadStr.Substring(index, 1));
                     index += 9;
                     // devVbat
-                    values[2].Value = strReadStr.Substring(index, 3);
+                    values[3].Value = Convert.ToDecimal(strReadStr.Substring(index, 3));
                     index += 11;
                     // stationId
-                    values[3].Value = strReadStr.Substring(index, 12);
+                    values[4].Value = Convert.ToInt64(strReadStr.Substring(index, 12));
                     index += 20;
                     // signal
                     len = strReadStr.IndexOf("\"", index) - index;
-                    values[4].Value = strReadStr.Substring(index, len);
+                    values[5].Value = Convert.ToByte(strReadStr.Substring(index, len));
                     index += len + 8;
                     // steps
                     len = strReadStr.IndexOf("\"", index) - index;
-                    values[5].Value = strReadStr.Substring(index, len);
+                    values[6].Value = Convert.ToInt64(strReadStr.Substring(index, len));
                     index += len + 8;
                     // date
-                    values[6].Value = strReadStr.Substring(index, 10);
+                    values[7].Value = Convert.ToDateTime(strReadStr.Substring(index, 10));
                     // time
-                    values[7].Value = strReadStr.Substring(index, 19);
+                    values[8].Value = Convert.ToDateTime(strReadStr.Substring(index, 19));
                     index += 30;
                     // version
                     len = strReadStr.IndexOf("\"", index) - index;
-                    values[8].Value = strReadStr.Substring(index, len);
+                    values[9].Value = Convert.ToByte(strReadStr.Substring(index, len));
                     index += len + 8;
                     // frameSn
                     len = strReadStr.IndexOf("\"", index) - index;
-                    values[9].Value = strReadStr.Substring(index, len);
-
+                    values[10].Value = Convert.ToByte(strReadStr.Substring(index, len));
                     // isRepeatRpt 列，0-没有重复, 1 - 重复
-                    values[10].Value = 1;
+                    values[11].Value = 1;
 
 #if fa
                     if (repeatCnt != 0xFFFF)
@@ -578,7 +590,7 @@ namespace BuBuJi_DataAnalysisTool
 
                     // 提交插入命令
                     //cmd.CommandText = values[0].Command.CommandText;
-                    cmd.Parameters.AddRange(values);
+                    //cmd.Parameters.AddRange(values);
                     cmd.ExecuteNonQuery();
 
                     cnt++;
