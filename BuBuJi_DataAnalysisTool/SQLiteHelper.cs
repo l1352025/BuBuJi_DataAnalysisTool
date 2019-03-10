@@ -13,6 +13,9 @@ namespace BuBuJi_DataAnalysisTool
         /// 连接字符串
         /// </summary>
         private static string _connectionString;
+        private static SQLiteConnection connectionCurrent;
+        private static SQLiteConnection connectionDisk;
+        private static SQLiteConnection connectionMemory;
         public string ConnectionString{ get {return _connectionString;} }
 
         /// <summary>
@@ -59,6 +62,70 @@ namespace BuBuJi_DataAnalysisTool
             return true;
         }
 
+        // 获取连接
+        private SQLiteConnection OpenConnection()
+        {
+            if(connectionCurrent == null)
+            {
+                connectionDisk = new SQLiteConnection(ConnectionString);
+                connectionCurrent = connectionDisk;
+                connectionCurrent.Open();
+            }
+            return connectionCurrent;
+        }
+
+        /// <summary>
+        /// 关闭数据库连接
+        /// </summary>
+        public void CloseConnection()
+        {
+            if(connectionMemory != null)
+            {
+                connectionMemory.Close();
+            }
+            if (connectionDisk != null)
+            {
+                connectionDisk.Close();
+            }
+            connectionCurrent = null;
+        }
+
+        // 使用内存数据库
+        public void MemoryDatabaseEable()
+        {
+            if(connectionMemory == null)
+            {
+                connectionMemory = new SQLiteConnection("Data Source = :memory:");
+                connectionCurrent = connectionMemory;
+                if(connectionDisk == null)
+                {
+                    connectionDisk = new SQLiteConnection(ConnectionString);
+                    connectionDisk.Open();
+                }
+                connectionMemory.Open(); // allways open
+                connectionDisk.BackupDatabase(connectionMemory, "main", "main", -1, null, -1);
+                connectionDisk.Close();
+            }
+        }
+        // 备份内存数据库到磁盘
+        public void MemoryDatabaseToDisk()
+        {
+            if (connectionMemory != null)
+            {
+                if (connectionDisk == null)
+                {
+                    connectionDisk = new SQLiteConnection(ConnectionString);
+                }
+                if(connectionMemory.State != ConnectionState.Open)
+                {
+                    connectionMemory.Open();
+                }
+                connectionDisk.Open();
+                connectionMemory.BackupDatabase(connectionDisk, "main", "main", -1, null, -1);
+                connectionDisk.Close();
+            }
+        }
+
         /// <summary>
         /// 执行SQL命令 - 增、删、改
         /// </summary>
@@ -69,21 +136,16 @@ namespace BuBuJi_DataAnalysisTool
         {
             int affectRows = 0;
 
-            using (SQLiteConnection con = new SQLiteConnection(_connectionString))
+            try
             {
-                using (SQLiteCommand cmd = new SQLiteCommand(sqlText, con))
-                {
-                    try
-                    {
-                        if (parameters != null && parameters.Length > 0) cmd.Parameters.AddRange(parameters);
+                SQLiteConnection con = OpenConnection();
+                SQLiteCommand cmd = new SQLiteCommand(sqlText, con);
 
-                        con.Open();
+                if (parameters != null && parameters.Length > 0) cmd.Parameters.AddRange(parameters);
 
-                        affectRows = cmd.ExecuteNonQuery();
-                    }
-                    catch (Exception) { throw; }
-                }
+                affectRows = cmd.ExecuteNonQuery();
             }
+            catch (Exception) { throw; }
 
             return affectRows;
         }
@@ -93,60 +155,38 @@ namespace BuBuJi_DataAnalysisTool
         /// <param name="list">key = sqlText, value = parameters</param>
         public void ExecuteNonQueryBatch(List< KeyValuePair<string, SQLiteParameter[]>> list)
         {
-            using (SQLiteConnection con = new SQLiteConnection(_connectionString))
+            try
             {
-                try
-                {
-                    con.Open();
-                }
-                catch (Exception) { throw; }
+                SQLiteConnection con = OpenConnection();
+                SQLiteTransaction trans = con.BeginTransaction();
+                SQLiteCommand cmd = new SQLiteCommand(con);
 
-                using (SQLiteTransaction trans = con.BeginTransaction())
+                foreach (var item in list)
                 {
-                    using (SQLiteCommand cmd = new SQLiteCommand(con))
-                    {
-                        try
-                        {
-                            foreach (var item in list)
-                            {
-                                cmd.CommandText = item.Key;
-                                if (item.Value != null) cmd.Parameters.AddRange(item.Value);
-                                cmd.ExecuteNonQuery();
-                            }
-                            trans.Commit();
-                        }
-                        catch (Exception) { throw; }
-                    }
+                    cmd.CommandText = item.Key;
+                    if (item.Value != null) cmd.Parameters.AddRange(item.Value);
+                    cmd.ExecuteNonQuery();
                 }
+                trans.Commit();
             }
+            catch (Exception) { throw; }
         }
         public void ExecuteNonQueryBatch(List<string> sqlTexts)
         {
-            using (SQLiteConnection con = new SQLiteConnection(_connectionString))
+            try
             {
-                try
-                {
-                    con.Open();
-                }
-                catch (Exception) { throw; }
+                SQLiteConnection con = OpenConnection();
+                SQLiteTransaction trans = con.BeginTransaction();
+                SQLiteCommand cmd = new SQLiteCommand(con);
 
-                using (SQLiteTransaction trans = con.BeginTransaction())
+                foreach (var item in sqlTexts)
                 {
-                    using (SQLiteCommand cmd = new SQLiteCommand(con))
-                    {
-                        try
-                        {
-                            foreach (var item in sqlTexts)
-                            {
-                                cmd.CommandText = item;
-                                cmd.ExecuteNonQuery();
-                            }
-                            trans.Commit();
-                        }
-                        catch (Exception) { throw; }
-                    }
+                    cmd.CommandText = item;
+                    cmd.ExecuteNonQuery();
                 }
+                trans.Commit();
             }
+            catch (Exception) { throw; }
         }
 
         /// <summary>
@@ -157,15 +197,14 @@ namespace BuBuJi_DataAnalysisTool
         /// <param name="parameters">其他参数</param>
         public SQLiteDataReader ExecuteReader(string sqlText, params SQLiteParameter[] parameters)
         {
-            SQLiteConnection con = new SQLiteConnection(_connectionString);
-            SQLiteCommand cmd = new SQLiteCommand(sqlText, con);
             try
             {
+                SQLiteConnection con = OpenConnection();
+                SQLiteCommand cmd = new SQLiteCommand(sqlText, con);
+
                 if (parameters != null && parameters.Length > 0) cmd.Parameters.AddRange(parameters);
 
-                con.Open();
-
-                return cmd.ExecuteReader(CommandBehavior.CloseConnection);
+                return cmd.ExecuteReader();
             }
             catch (Exception) { throw; }
         }
@@ -174,22 +213,17 @@ namespace BuBuJi_DataAnalysisTool
         {
             DataTable tb = new DataTable();
             
-            using (SQLiteConnection con = new SQLiteConnection(_connectionString))
+            try
             {
-                using (SQLiteCommand cmd = new SQLiteCommand(sqlText, con))
-                {
-                    try
-                    {
-                        if (parameters != null && parameters.Length > 0) cmd.Parameters.AddRange(parameters);
+                SQLiteConnection con = OpenConnection();
+                SQLiteCommand cmd = new SQLiteCommand(sqlText, con);
 
-                        con.Open();
+                if (parameters != null && parameters.Length > 0) cmd.Parameters.AddRange(parameters);
 
-                        SQLiteDataAdapter adt = new SQLiteDataAdapter(cmd);
-                        adt.Fill(tb);
-                    }
-                    catch (Exception) { throw; }
-                }
+                SQLiteDataAdapter adt = new SQLiteDataAdapter(cmd);
+                adt.Fill(tb);
             }
+            catch (Exception) { throw; }
 
             return tb;
         }
@@ -202,28 +236,16 @@ namespace BuBuJi_DataAnalysisTool
         /// <param name="parameters">其他参数</param>
         public object ExecuteScalar(string sqlText, params SQLiteParameter[] parameters)
         {
-            using (SQLiteConnection con = new SQLiteConnection(_connectionString))
+            try
             {
-                using (SQLiteCommand cmd = new SQLiteCommand(sqlText, con))
-                {
-                    try
-                    {
-                        if (parameters != null && parameters.Length > 0) cmd.Parameters.AddRange(parameters);
+                SQLiteConnection con = OpenConnection();
+                SQLiteCommand cmd = new SQLiteCommand(sqlText, con);
 
-                        con.Open();
+                if (parameters != null && parameters.Length > 0) cmd.Parameters.AddRange(parameters);
 
-                        return cmd.ExecuteScalar();
-                    }
-                    catch (Exception) { throw; }
-                }
+                return cmd.ExecuteScalar();
             }
-        }
-
-        /// <summary>
-        /// 关闭数据库连接
-        /// </summary>
-        public void CloseConnection()
-        {
+            catch (Exception) { throw; }
         }
 
         /// <summary>
