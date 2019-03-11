@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using System.Data.SQLite;
 using System.Threading;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace BuBuJi_DataAnalysisTool
 {
@@ -230,6 +231,12 @@ namespace BuBuJi_DataAnalysisTool
             }
             _uiMsgQueue = null;
             _uiMsgPool = null;
+
+            if(_sqldb != null)
+            {
+                _sqldb.MemoryDatabaseToDisk();
+                _sqldb.CloseConnection();
+            }
         }
 
         #endregion
@@ -257,20 +264,9 @@ namespace BuBuJi_DataAnalysisTool
         }
         #endregion
 
-        #region 数据库创建
+        #region 数据库创建、载入内存
         private void InitialDb()
         {
-            /*  可考虑使用 内存数据库《==》磁盘 互转
-            SQLiteConnection cnnIn = new SQLiteConnection("data source=" + dataBaseFileName);
-            SQLiteConnection SqlMemoryConnection = new SQLiteConnection("Data Source=:memory:");
-
-            cnnIn.Open();
-            SqlMemoryConnection.Open();
-
-            cnnIn.BackupDatabase(SqlMemoryConnection, "main", "main", -1, null, -1);
-            cnnIn.Close();
-            */
-
             string dbName = Path.GetDirectoryName(Application.ExecutablePath) + "\\database.db";
 
             if (_sqldb == null)
@@ -336,7 +332,7 @@ namespace BuBuJi_DataAnalysisTool
             }
 
             // 使用内存数据库
-
+            _sqldb.MemoryDatabaseEable();
         }
 
         public DataTable ExcelToDataTable(string dataSource, string tblName)
@@ -412,7 +408,7 @@ namespace BuBuJi_DataAnalysisTool
         {
             if(e.ColumnIndex >= 2  && e.ColumnIndex <= 6)
             {
-                e.Value = ((int)e.Value == 0 ? "" : e.Value);
+                e.Value = ( e.Value.ToString() == "0" ? "" : e.Value);
             }
         }
 
@@ -477,7 +473,6 @@ namespace BuBuJi_DataAnalysisTool
             StreamReader sr = new StreamReader(strFileName, Encoding.UTF8);
 
             int index, len, cnt = 0, repeatCnt = 0;
-            DateTime timeStart = DateTime.Now;
             object[] dataFields = new object[12];
             StringBuilder strRead = new StringBuilder();
             string strReadStr;
@@ -485,25 +480,13 @@ namespace BuBuJi_DataAnalysisTool
 
             if (_sqldb == null) return;
 
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+
             _sqldb.ExecuteNonQuery("PRAGMA synchronous = OFF");
 
             // 打开数据库、创建事务处理
-            //SQLiteConnection con = new SQLiteConnection(_sqldb.ConnectionString);
-            SQLiteConnection con = new SQLiteConnection("Data Source=:memory:");
-            SQLiteConnection conDisk = new SQLiteConnection(_sqldb.ConnectionString);
-            try
-            {
-                con.Open();
-            }
-            catch(Exception)
-            {
-                ShowMsg("数据库打开失败！\r\n", Color.Red);
-                return;
-            }
-
-            conDisk.Open();
-            conDisk.BackupDatabase(con, "main", "main", -1, null, -1);
-
+            SQLiteConnection con = _sqldb.OpenConnection();
             SQLiteTransaction trans = con.BeginTransaction();
             SQLiteCommand cmd = new SQLiteCommand(con);
             SQLiteParameter[] values = new SQLiteParameter[12];
@@ -659,6 +642,8 @@ namespace BuBuJi_DataAnalysisTool
                         + "@signalVal, @stepSum, @date, @dateTime, @version, @frameSn, @isRepeatRpt )";
                     cmd.Parameters.AddRange(values);
                     cmd.ExecuteNonQuery();
+
+                    // clear 
                     cmd.Parameters.Clear();
 
                     cnt++;
@@ -675,13 +660,6 @@ namespace BuBuJi_DataAnalysisTool
             // 提交事务处理
             trans.Commit();
 
-            // 拷贝到磁盘数据库
-            //con.BackupDatabase(conDisk, "main", "main", -1, null, -1);
-            conDisk.Close();
-
-            // 关闭数据库
-            con.Close();
-
             if(repeatCnt == 2)
             {
                 ShowMsg("导入已终止：前2条记录数据库中已存在，可能该日志文件已导入过了\r\n", Color.Red, false);
@@ -691,16 +669,17 @@ namespace BuBuJi_DataAnalysisTool
                 // 数据、界面初始化
                 DataInit();
             }
-                
-            ShowMsg("导入 " + cnt + " 条记录完成！ 用时 " + 
-                (DateTime.Now - timeStart).TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
+
+            timer.Stop();
+            ShowMsg("导入 " + cnt + " 条记录完成！ 用时 " +
+                timer.Elapsed.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
 
             //ShowMsg((repeatCnt == 0 ? "" : "排除重复记录 " + repeatCnt + " 条\r\n"), Color.Red, false);
 
         }
-#endregion
+        #endregion
         
-#region 查询数据库
+        #region 查询数据库
         private void dgvDate_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0) return;
@@ -814,7 +793,8 @@ namespace BuBuJi_DataAnalysisTool
         private void btQuery_Click(object sender, EventArgs e)
         {
             string sqlText = "";
-            DateTime timeStart = DateTime.Now;
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
 
             // 查询条件设置
             if((sqlText = GetQueryCondition()) == "error")
@@ -835,12 +815,13 @@ namespace BuBuJi_DataAnalysisTool
 
             tabControl1.SelectedTab = tabPage1;
 
+            timer.Stop();
             ShowMsg("查询完成！ 用时 " +
-                    (DateTime.Now - timeStart).TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
+                    timer.Elapsed.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
         }
-#endregion
+        #endregion
 
-#region 查询结果右键-导出、选择设备id/基站id/日期
+        #region 查询结果右键-导出、选择设备id/基站id/日期
 
         private void cMenuLog_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
@@ -940,9 +921,9 @@ namespace BuBuJi_DataAnalysisTool
                     break;
             }
         }
-#endregion
+        #endregion
 
-#region 统计-日期列表、基站列表、设备列表、设备档案信息
+        #region 统计-日期列表、基站列表、设备列表、设备档案信息
 
         // 统计-总数、日期/基站/设备列表
         private void MainInfoListUpdate()
@@ -1128,13 +1109,18 @@ namespace BuBuJi_DataAnalysisTool
                 ShowMsg("\r\n序号  不在档案中的设备\r\n" + strBuilder.ToString(), Color.Red, false);
             }
 
+            // clear
+            tbAllRpt_Devs = null;
+            tbAllRpt_DevSteps = null;
+            tbZeroStep_Devs = null;
         }
 
         // 统计按钮单击
         private void btQueryCountInfo_Click(object sender, EventArgs e)
         {
-            DateTime timeStart = DateTime.Now;
+            Stopwatch timer = new Stopwatch();
             ShowMsg("统计中...\r\n", Color.Blue, false, true);
+            timer.Start();
 
             // 总数、日期/基站/设备列表更新
             MainInfoListUpdate();
@@ -1144,12 +1130,12 @@ namespace BuBuJi_DataAnalysisTool
 
             tabControl1.SelectedTab = tabPage2;
 
-            ShowMsg("统计完成！ 用时 "
-                + (DateTime.Now - timeStart).TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
+            timer.Stop();
+            ShowMsg("统计完成！ 用时 " + timer.Elapsed.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
         }
-#endregion
+        #endregion
 
-#region 导出-日期列表/基站列表/设备列表
+        #region 导出-日期列表/基站列表/设备列表
         // 导出列表
         private void DataTableToFile(DataTable tb, string toSaveName)
         {
@@ -1316,9 +1302,30 @@ namespace BuBuJi_DataAnalysisTool
 
             ShowMsg("导出日期列表成功！\r\n", Color.Green, false);
         }
-#endregion
+        private void dates删除记录ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (dgvDate.SelectedRows.Count == 0) return;
 
-#region 查看上一页/下一页 、跳到指定页
+            if (dgvDate.SelectedRows.Count == tbDates.Rows.Count)
+            {
+                btClearAll_Click(null, null);
+            }
+            else
+            {
+                StringBuilder sbDate = new StringBuilder();
+                foreach(DataGridViewRow row in dgvDate.SelectedRows)
+                {
+                    sbDate.Clear();
+                    sbDate.Append(Convert.ToDateTime(row.Cells[0].Value).ToString("yyyy-MM-dd"));
+                    _sqldb.ExecuteNonQuery("delete from tblLog where date = '" + sbDate.ToString() + "'");
+                    tbDates.Rows.Remove(((DataRowView)(row.DataBoundItem)).Row);
+                    ShowMsg(sbDate.ToString() + " 数据库记录已删除！\r\n", Color.Green, false);
+                }
+            }
+        }
+        #endregion
+
+        #region 查看上一页/下一页 、跳到指定页
 
         // 查询 上一页
         private void btPagePrev_Click(object sender, EventArgs e)
@@ -1337,15 +1344,15 @@ namespace BuBuJi_DataAnalysisTool
         // 跳转到指定页
         private void txtCurrPage_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if("0123456789\r\b".IndexOf(e.KeyChar) < 0)
+            if ("0123456789\r\b".IndexOf(e.KeyChar) < 0)
             {
                 e.Handled = true;
             }
 
-            if(e.KeyChar == '\r' && txtCurrPage.Text != "")
+            if (e.KeyChar == '\r' && txtCurrPage.Text != "")
             {
                 int pageNum = Convert.ToInt32(txtCurrPage.Text);
-                if(pageNum > _pageCnt || pageNum == 0)
+                if (pageNum > _pageCnt || pageNum == 0)
                 {
                     ShowMsg("请输入正确的页序号：最小为1，最大为" + _pageCnt + "\r\n", Color.Red);
                     txtCurrPage.Text = _currPage.ToString();
@@ -1365,7 +1372,7 @@ namespace BuBuJi_DataAnalysisTool
             sqlText = "select * from tblLog" + _currSelCondition + " limit " + _pageSize + " offset " + rsltOffset;
             SQLiteDataReader reader = _sqldb.ExecuteReader(sqlText);
 
-            if(reader.HasRows)
+            if (reader.HasRows)
             {
                 _currPage = pageNum;
             }
@@ -1397,9 +1404,9 @@ namespace BuBuJi_DataAnalysisTool
             UpdateCurrentPage(_currPage);
         }
 
-#endregion
+        #endregion 
 
-#region 删除数据库 、清空当前显示
+        #region 删除数据库 、清空当前显示
         // 删除数据库
         private void btClearAll_Click(object sender, EventArgs e)
         {
@@ -1445,9 +1452,9 @@ namespace BuBuJi_DataAnalysisTool
             UpdateResultCnt(_resultCnt);
             UpdateCurrentPage(_currPage);
         }
-#endregion
+        #endregion
 
-#region 设备档案信息-导入、删除、导出
+        #region 设备档案信息-导入、删除、导出
         // 导入档案
         private void btDocImport_Click(object sender, EventArgs e)
         {
@@ -1471,23 +1478,15 @@ namespace BuBuJi_DataAnalysisTool
             StreamReader sr = new StreamReader(strFileName, Encoding.UTF8);
 
             int index, len, cnt = 0;
-            DateTime timeStart = DateTime.Now;
-            object[] dataFields = new object[9];
+            object[] dataFields = new object[2];
             string strReadStr, strSplit;
+            Stopwatch timer = new Stopwatch();
 
             if (_sqldb == null) return;
 
+            timer.Start();
             // 打开数据库、创建事务处理
-            SQLiteConnection con = new SQLiteConnection(_sqldb.ConnectionString);
-            try
-            {
-                con.Open();
-            }
-            catch (Exception)
-            {
-                ShowMsg("数据库打开失败！\r\n", Color.Red);
-                return;
-            }
+            SQLiteConnection con = _sqldb.OpenConnection();
             SQLiteTransaction trans = con.BeginTransaction();
             SQLiteCommand cmd = new SQLiteCommand(con);
 
@@ -1519,21 +1518,8 @@ namespace BuBuJi_DataAnalysisTool
                         continue;
                     }
 
-                    /*
-                    // ReportCnt
-                    dataFields[2] = 0;
-                    // RptDay1-5
-                    dataFields[3] = 0;
-                    dataFields[4] = 0;
-                    dataFields[5] = 0;
-                    dataFields[6] = 0;
-                    dataFields[7] = 0;
-                    // Stepstatus
-                    dataFields[8] = "";
-                     * */
-
                     // 重复档案检查
-                    cmd.CommandText = "select id from tblDoc where deviceId = " + dataFields[1];
+                    cmd.CommandText = "select distinct deviceId from tblDoc where deviceId = " + dataFields[1];
                     if (cmd.ExecuteScalar() != null)
                     {
                         continue;
@@ -1541,17 +1527,8 @@ namespace BuBuJi_DataAnalysisTool
 
                     // 提交插入命令
                     cmd.CommandText = "insert into tblDoc values ("
-                        + "NULL,"   // fileds[0] id列自动生成
+                        + "NULL,"   // id列自动生成
                         + dataFields[1] + 
-                        /*
-                        + dataFields[2] + ","
-                        + dataFields[3] + ","
-                        + dataFields[4] + ","
-                        + dataFields[5] + ","
-                        + dataFields[6] + ","
-                        + dataFields[7] + ","
-                        + "'" + dataFields[8] + "'" + 
-                         * */
                         ")";
                     cmd.ExecuteNonQuery();
 
@@ -1568,8 +1545,6 @@ namespace BuBuJi_DataAnalysisTool
             // 提交事务处理
             trans.Commit();
 
-            // 关闭数据库
-            con.Close();
 
             if (cnt == 0)
             {
@@ -1580,9 +1555,9 @@ namespace BuBuJi_DataAnalysisTool
                 // 读出档案到列表
                 ReadDocInfo();
             }
-
+            timer.Stop();
             ShowMsg("导入 " + cnt + " 条档案完成！ 用时 " +
-                (DateTime.Now - timeStart).TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
+                timer.Elapsed.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
         }
 
         // 从数据库中读出档案信息
@@ -1600,11 +1575,11 @@ namespace BuBuJi_DataAnalysisTool
             {
                 dates.Add(reader.GetString(0));
             }
+            reader.Close();
 
             // get docinfo
             sqlText = "select * from tblDoc order by deviceId";
             reader = _sqldb.ExecuteReader(sqlText);
-
             tbDoc.Clear();
             tbDoc.BeginLoadData();
             while(reader.Read())
@@ -1612,23 +1587,10 @@ namespace BuBuJi_DataAnalysisTool
                 row = tbDoc.NewRow();
                 row.BeginEdit();
                 row["设备ID"] = reader.GetInt64(1);
-
-                /*
-                if (dates.Count > 0)
-                {
-                    row["总上报次数"] = reader.GetInt32(2);
-                    row["第1天上报"] = reader.GetInt32(3);
-                    row["第2天上报"] = reader.GetInt32(4);
-                    row["第3天上报"] = reader.GetInt32(5);
-                    row["第4天上报"] = reader.GetInt32(6);
-                    row["第5天上报"] = reader.GetInt32(7);
-                    row["步数状态"] = reader.GetString(8);
-                }
-                 * */
-
                 row.EndEdit();
                 tbDoc.Rows.Add(row);
             }
+            reader.Close();
 
             // disable view's columns visible
             for (int i = 1; i < 8; i++)
@@ -1671,7 +1633,8 @@ namespace BuBuJi_DataAnalysisTool
                 return;
             }
 
-            DateTime timeStart = DateTime.Now;
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
             List<string> sqlTexts = new List<string>();
 
             foreach(DataGridViewRow row in dgvDoc.SelectedRows)
@@ -1681,8 +1644,9 @@ namespace BuBuJi_DataAnalysisTool
             }
             _sqldb.ExecuteNonQueryBatch(sqlTexts);
 
+            timer.Stop();
             ShowMsg("删除档案完成！ 用时 " +
-                (DateTime.Now - timeStart).TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
+                timer.Elapsed.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
         }
 
         // 清除档案视图
@@ -1709,7 +1673,7 @@ namespace BuBuJi_DataAnalysisTool
                         SaveFileDialog savefileDlg = new SaveFileDialog();
                         savefileDlg.Filter = "*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
                         savefileDlg.DefaultExt = ".txt";
-                        savefileDlg.FileName = "XX查询结果-第" + _currPage + "页";
+                        savefileDlg.FileName = "设备档案信息";
 
                         if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
@@ -1734,6 +1698,6 @@ namespace BuBuJi_DataAnalysisTool
             }
         }
 
-#endregion
+    #endregion
     }
 }

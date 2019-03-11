@@ -167,6 +167,7 @@
             this.cMenuDocs = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.导出列表ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.选择当前行设备IDToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.dates删除记录ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.dgvLog)).BeginInit();
             this.cMenuLogs.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dsLog)).BeginInit();
@@ -330,7 +331,7 @@
             this.选择当前行基站IDToolStripMenuItem,
             this.选择当前行日期ToolStripMenuItem});
             this.cMenuLogs.Name = "cMenuLogs";
-            this.cMenuLogs.Size = new System.Drawing.Size(179, 136);
+            this.cMenuLogs.Size = new System.Drawing.Size(179, 114);
             this.cMenuLogs.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.cMenuLog_ItemClicked);
             // 
             // 导出本页ToolStripMenuItem
@@ -811,9 +812,10 @@
             // cMenuDates
             // 
             this.cMenuDates.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.dates导出列表ToolStripMenuItem2});
+            this.dates导出列表ToolStripMenuItem2,
+            this.dates删除记录ToolStripMenuItem});
             this.cMenuDates.Name = "cMenuDates";
-            this.cMenuDates.Size = new System.Drawing.Size(125, 26);
+            this.cMenuDates.Size = new System.Drawing.Size(125, 48);
             // 
             // dates导出列表ToolStripMenuItem2
             // 
@@ -1422,6 +1424,13 @@
             this.选择当前行设备IDToolStripMenuItem1.Size = new System.Drawing.Size(178, 22);
             this.选择当前行设备IDToolStripMenuItem1.Text = "选择当前行-设备ID";
             // 
+            // dates删除记录ToolStripMenuItem
+            // 
+            this.dates删除记录ToolStripMenuItem.Name = "dates删除记录ToolStripMenuItem";
+            this.dates删除记录ToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.dates删除记录ToolStripMenuItem.Text = "删除记录";
+            this.dates删除记录ToolStripMenuItem.Click += new System.EventHandler(this.dates删除记录ToolStripMenuItem_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1589,6 +1598,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn 第4天上报DataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn 第5天上报DataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn 步数状态DataGridViewTextBoxColumn;
+        private System.Windows.Forms.ToolStripMenuItem dates删除记录ToolStripMenuItem;
     }
 }
 

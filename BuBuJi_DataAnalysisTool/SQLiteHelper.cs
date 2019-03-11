@@ -63,15 +63,19 @@ namespace BuBuJi_DataAnalysisTool
         }
 
         // 获取连接
-        private SQLiteConnection OpenConnection()
+        public SQLiteConnection OpenConnection()
         {
-            if(connectionCurrent == null)
+            try
             {
-                connectionDisk = new SQLiteConnection(ConnectionString);
-                connectionCurrent = connectionDisk;
-                connectionCurrent.Open();
+                if (connectionCurrent == null)
+                {
+                    connectionDisk = new SQLiteConnection(ConnectionString);
+                    connectionCurrent = connectionDisk;
+                    connectionCurrent.Open();
+                }
+                return connectionCurrent;
             }
-            return connectionCurrent;
+            catch (Exception) { throw; }
         }
 
         /// <summary>
@@ -79,51 +83,95 @@ namespace BuBuJi_DataAnalysisTool
         /// </summary>
         public void CloseConnection()
         {
-            if(connectionMemory != null)
+            try
             {
-                connectionMemory.Close();
+                if (connectionMemory != null)
+                {
+                    connectionMemory.Close();
+                }
+                if (connectionDisk != null)
+                {
+                    connectionDisk.Close();
+                }
+                connectionCurrent = null;
             }
-            if (connectionDisk != null)
-            {
-                connectionDisk.Close();
-            }
-            connectionCurrent = null;
+            catch (Exception) { throw; }
         }
 
         // 使用内存数据库
         public void MemoryDatabaseEable()
         {
-            if(connectionMemory == null)
+            try
             {
-                connectionMemory = new SQLiteConnection("Data Source = :memory:");
-                connectionCurrent = connectionMemory;
-                if(connectionDisk == null)
+                if (connectionMemory == null)
                 {
-                    connectionDisk = new SQLiteConnection(ConnectionString);
-                    connectionDisk.Open();
+                    connectionMemory = new SQLiteConnection("Data Source = :memory:");
+                    connectionCurrent = connectionMemory;
+                    connectionMemory.Open(); // allways open
+                    if (connectionDisk == null)
+                    {
+                        connectionDisk = new SQLiteConnection(ConnectionString);
+                    }
+                    if (connectionDisk.State != ConnectionState.Open)
+                    {
+                        connectionDisk.Open();
+                    }
+                    connectionDisk.BackupDatabase(connectionMemory, "main", "main", -1, null, -1);
+                    connectionDisk.Close();
                 }
-                connectionMemory.Open(); // allways open
-                connectionDisk.BackupDatabase(connectionMemory, "main", "main", -1, null, -1);
-                connectionDisk.Close();
             }
+            catch (Exception) { throw; }
+        }
+        // 禁用内存数据库
+        public void MemoryDatabaseDisable()
+        {
+            try
+            {
+                if (connectionMemory != null)
+                {
+                    if (connectionDisk == null)
+                    {
+                        connectionDisk = new SQLiteConnection(ConnectionString);
+                    }
+                    if (connectionMemory.State != ConnectionState.Open)
+                    {
+                        connectionMemory.Open();
+                    }
+                    if (connectionDisk.State != ConnectionState.Open)
+                    {
+                        connectionDisk.Open();
+                    }
+                    connectionMemory.BackupDatabase(connectionDisk, "main", "main", -1, null, -1);
+                    connectionMemory.Close();
+                    connectionCurrent = connectionDisk;
+                }
+            }
+            catch (Exception) { throw; }
         }
         // 备份内存数据库到磁盘
         public void MemoryDatabaseToDisk()
         {
-            if (connectionMemory != null)
+            try
             {
-                if (connectionDisk == null)
+                if (connectionMemory != null)
                 {
-                    connectionDisk = new SQLiteConnection(ConnectionString);
+                    if (connectionDisk == null)
+                    {
+                        connectionDisk = new SQLiteConnection(ConnectionString);
+                    }
+                    if (connectionMemory.State != ConnectionState.Open)
+                    {
+                        connectionMemory.Open();
+                    }
+                    if (connectionDisk.State != ConnectionState.Open)
+                    {
+                        connectionDisk.Open();
+                    }
+                    connectionMemory.BackupDatabase(connectionDisk, "main", "main", -1, null, -1);
+                    connectionDisk.Close();
                 }
-                if(connectionMemory.State != ConnectionState.Open)
-                {
-                    connectionMemory.Open();
-                }
-                connectionDisk.Open();
-                connectionMemory.BackupDatabase(connectionDisk, "main", "main", -1, null, -1);
-                connectionDisk.Close();
             }
+            catch (Exception) { throw; }
         }
 
         /// <summary>
