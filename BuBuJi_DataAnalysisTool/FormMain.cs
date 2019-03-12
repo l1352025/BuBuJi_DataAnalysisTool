@@ -236,6 +236,7 @@ namespace BuBuJi_DataAnalysisTool
             {
                 _sqldb.MemoryDatabaseToDisk();
                 _sqldb.CloseConnection();
+                _sqldb = null;
             }
         }
 
@@ -296,12 +297,14 @@ namespace BuBuJi_DataAnalysisTool
                 // index idx on tblLog
                 sql = "CREATE INDEX IF NOT EXISTS idx ON tblLog ( " +
                     "deviceId," +
-                    "stationId," +
+                    "deviceStatus," +
                     "deviceVoltage," +
-                    "frameSn," +
+                    "stationId," +
                     "stepSum," +
                     "date," +
                     "datetime," +
+                    "version," +
+                    "frameSn," +
                     "isRepeatRpt" + 
                 ")";
                 _sqldb.ExecuteNonQuery(sql);
@@ -311,15 +314,6 @@ namespace BuBuJi_DataAnalysisTool
                 sql = "CREATE TABLE IF NOT EXISTS tblDoc ( " +
                     "id            INTEGER PRIMARY KEY AUTOINCREMENT," +
                     "deviceId      INTEGER (8)" +
-                    /*
-                    "reportCnt     INTEGER (4)," +
-                    "rptCntDay1    INTEGER (4)," +
-                    "rptCntDay2    INTEGER (4)," +
-                    "rptCntDay3    INTEGER (4)," +
-                    "rptCntDay4    INTEGER (4)," +
-                    "rptCntDay5    INTEGER (4)," +
-                    "stepStatus    TEXT" +
-                     * */
                 ")";
                 _sqldb.ExecuteNonQuery(sql);
 
@@ -473,8 +467,7 @@ namespace BuBuJi_DataAnalysisTool
             StreamReader sr = new StreamReader(strFileName, Encoding.UTF8);
 
             int index, len, cnt = 0, repeatCnt = 0;
-            object[] dataFields = new object[12];
-            StringBuilder strRead = new StringBuilder();
+            StringBuilder sbSql = new StringBuilder();
             string strReadStr;
             DateTime time;
 
@@ -511,7 +504,7 @@ namespace BuBuJi_DataAnalysisTool
                 + "signalVal, stepSum, date, dateTime, version, frameSn, isRepeatRpt )"
                 + " values ( @id, @deviceId, @deviceStatus, @deviceVoltage, @stationId, " 
                 + "@signalVal, @stepSum, @date, @dateTime, @version, @frameSn, @isRepeatRpt )";
-            //cmd.Parameters.AddRange(values);
+            cmd.Parameters.AddRange(values);
 
             while ((strReadStr = sr.ReadLine()) != null)
             {
@@ -601,11 +594,12 @@ namespace BuBuJi_DataAnalysisTool
                     if (repeatCnt != 0xFFFF)
                     {
                         // 重复导入检查, 前2条重复则停止导入
-                        cmd.CommandText = "select id from tblLog where "
+                        sbSql.Clear();
+                        sbSql.Append("select id from tblLog where "
                             + "deviceId = " + values[1].Value + " and "
                             + "stationId = " + values[4].Value + " and "
-                            + "datetime = '" + values[8].Value + "'";
-                        if (cmd.ExecuteScalar() != null)
+                            + "datetime = '" + values[8].Value + "'");
+                        if (_sqldb.ExecuteScalar(sbSql.ToString()) != null)
                         {
                             repeatCnt++;
                             if (repeatCnt == 2)
@@ -621,30 +615,21 @@ namespace BuBuJi_DataAnalysisTool
 #if true
                     // 重复上报标记设置
                     time = Convert.ToDateTime(values[8].Value);
-                    cmd.CommandText = "select id from tblLog where "
+                    sbSql.Clear();
+                    sbSql.Append("select id from tblLog where "
                         + "deviceId = " + values[1].Value + " and "
                         + "frameSn = " + values[10].Value + " and "
                         + "stepSum = " + values[6].Value + " and "
                         + "datetime between '" + time.AddSeconds(-3).ToString("yyyy-MM-dd HH:mm:ss")
-                        + "' and '" + time.AddSeconds(3).ToString("yyyy-MM-dd HH:mm:ss") + "'"
-                        + " limit 1";
-                    if (cmd.ExecuteScalar() != null)
+                        + "' and '" + time.AddSeconds(3).ToString("yyyy-MM-dd HH:mm:ss") + "'");
+                    if (_sqldb.ExecuteScalar(sbSql.ToString()) != null)
                     {
                         values[11].Value = 1;
                     }
 #endif
 
                     // 提交插入命令
-                    cmd.CommandText = "insert into tblLog"
-                        + " ( id, deviceId, deviceStatus, deviceVoltage, stationId, "
-                        + "signalVal, stepSum, date, dateTime, version, frameSn, isRepeatRpt )"
-                        + " values ( @id, @deviceId, @deviceStatus, @deviceVoltage, @stationId, "
-                        + "@signalVal, @stepSum, @date, @dateTime, @version, @frameSn, @isRepeatRpt )";
-                    cmd.Parameters.AddRange(values);
                     cmd.ExecuteNonQuery();
-
-                    // clear 
-                    cmd.Parameters.Clear();
 
                     cnt++;
                 }
@@ -655,7 +640,9 @@ namespace BuBuJi_DataAnalysisTool
                 }
             }
             sr.Close();
-            //dgvLog.FirstDisplayedScrollingRowIndex = dgvLog.Rows.Count - 1;
+
+            // 重复上报标记设置
+
 
             // 提交事务处理
             trans.Commit();
