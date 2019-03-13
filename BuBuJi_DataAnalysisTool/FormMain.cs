@@ -464,155 +464,112 @@ namespace BuBuJi_DataAnalysisTool
 
             ShowMsg("Log导入中。。。\r\n", Color.Blue, false, true);
 
-            StreamReader sr = new StreamReader(strFileName, Encoding.UTF8);
-
-            int index, len, cnt = 0, repeatCnt = 0;
-            StringBuilder sbSql = new StringBuilder();
-            string strReadStr;
-            DateTime time;
-
-            if (_sqldb == null) return;
-
-            Stopwatch timer = new Stopwatch();
-            timer.Start();
-
-            _sqldb.ExecuteNonQuery("PRAGMA synchronous = OFF");
-
-            // 打开数据库、创建事务处理
-            SQLiteConnection con = _sqldb.OpenConnection();
-            SQLiteTransaction trans = con.BeginTransaction();
-            SQLiteCommand cmd = new SQLiteCommand(con);
-            SQLiteParameter[] values = new SQLiteParameter[12];
-#if true
-            values[0] = new SQLiteParameter("@id");
-            values[1] = new SQLiteParameter("@deviceId");
-            values[2] = new SQLiteParameter("@deviceStatus");
-            values[3] = new SQLiteParameter("@deviceVoltage");
-            values[4] = new SQLiteParameter("@stationId");
-            values[5] = new SQLiteParameter("@signalVal");
-            values[6] = new SQLiteParameter("@stepSum");
-            values[7] = new SQLiteParameter("@date");
-            values[8] = new SQLiteParameter("@dateTime");
-            values[9] = new SQLiteParameter("@version");
-            values[10] = new SQLiteParameter("@frameSn");
-            values[11] = new SQLiteParameter("@isRepeatRpt");
-#endif
-            
-            cmd.Transaction = trans;
-            cmd.CommandText = "insert into tblLog" 
-                + " ( id, deviceId, deviceStatus, deviceVoltage, stationId, " 
-                + "signalVal, stepSum, date, dateTime, version, frameSn, isRepeatRpt )"
-                + " values ( @id, @deviceId, @deviceStatus, @deviceVoltage, @stationId, " 
-                + "@signalVal, @stepSum, @date, @dateTime, @version, @frameSn, @isRepeatRpt )";
-            cmd.Parameters.AddRange(values);
-
-            while ((strReadStr = sr.ReadLine()) != null)
+            Thread t = new Thread(new ThreadStart(delegate
             {
-                try
+                StreamReader sr = new StreamReader(strFileName, Encoding.UTF8);
+
+                int index, len, cnt = 0, repeatCnt = 0;
+                StringBuilder sbSql = new StringBuilder();
+                string strReadStr;
+                DateTime time;
+
+                if (_sqldb == null) return;
+
+                Stopwatch timer = new Stopwatch();
+                timer.Start();
+
+                _sqldb.ExecuteNonQuery("PRAGMA synchronous = OFF");
+
+                // 打开数据库、创建事务处理
+                SQLiteConnection con = _sqldb.OpenConnection();
+                SQLiteTransaction trans = con.BeginTransaction();
+                SQLiteCommand cmd = new SQLiteCommand(con);
+                SQLiteParameter[] values = new SQLiteParameter[12];
+
+                values[0] = new SQLiteParameter("@id");
+                values[1] = new SQLiteParameter("@deviceId");
+                values[2] = new SQLiteParameter("@deviceStatus");
+                values[3] = new SQLiteParameter("@deviceVoltage");
+                values[4] = new SQLiteParameter("@stationId");
+                values[5] = new SQLiteParameter("@signalVal");
+                values[6] = new SQLiteParameter("@stepSum");
+                values[7] = new SQLiteParameter("@date");
+                values[8] = new SQLiteParameter("@dateTime");
+                values[9] = new SQLiteParameter("@version");
+                values[10] = new SQLiteParameter("@frameSn");
+                values[11] = new SQLiteParameter("@isRepeatRpt");
+
+                cmd.Transaction = trans;
+                cmd.CommandText = "insert into tblLog"
+                    + " ( id, deviceId, deviceStatus, deviceVoltage, stationId, "
+                    + "signalVal, stepSum, date, dateTime, version, frameSn, isRepeatRpt )"
+                    + " values ( @id, @deviceId, @deviceStatus, @deviceVoltage, @stationId, "
+                    + "@signalVal, @stepSum, @date, @dateTime, @version, @frameSn, @isRepeatRpt )";
+                cmd.Parameters.AddRange(values);
+
+                while ((strReadStr = sr.ReadLine()) != null)
                 {
-                    index = strReadStr.IndexOf("\"di\"");
-                    if (index < 0) continue;
-
-                    // id 列自动生成
-                    //values[0].Value = 0;
-#if fa
-                    index += 6;
-                    // devId
-                    values[1].Value = Convert.ToInt64(strReadStr.Substring(index, 12));
-                    index += 20;
-                    // devStatus
-                    values[2].Value = Convert.ToByte(strReadStr.Substring(index, 1));
-                    index += 9;
-                    // devVbat
-                    values[3].Value = Convert.ToDecimal(strReadStr.Substring(index, 3));
-                    index += 11;
-                    // stationId
-                    values[4].Value = Convert.ToInt64(strReadStr.Substring(index, 12));
-                    index += 20;
-                    // signal
-                    len = strReadStr.IndexOf("\"", index) - index;
-                    values[5].Value = Convert.ToByte(strReadStr.Substring(index, len));
-                    index += len + 8;
-                    // steps
-                    len = strReadStr.IndexOf("\"", index) - index;
-                    values[6].Value = Convert.ToInt64(strReadStr.Substring(index, len));
-                    index += len + 8;
-                    // date
-                    values[7].Value = Convert.ToDateTime(strReadStr.Substring(index, 10));
-                    // time
-                    values[8].Value = Convert.ToDateTime(strReadStr.Substring(index, 19));
-                    index += 30;
-                    // version
-                    len = strReadStr.IndexOf("\"", index) - index;
-                    values[9].Value = Convert.ToByte(strReadStr.Substring(index, len));
-                    index += len + 8;
-                    // frameSn
-                    len = strReadStr.IndexOf("\"", index) - index;
-                    values[10].Value = Convert.ToByte(strReadStr.Substring(index, len));
-                    // isRepeatRpt 列，0-没有重复, 1 - 重复
-                    values[11].Value = 1;
-#endif
-#if true
-                    index += 6;
-                    // devId
-                    values[1].Value = strReadStr.Substring(index, 12);
-                    index += 20;
-                    // devStatus
-                    values[2].Value = strReadStr.Substring(index, 1);
-                    index += 9;
-                    // devVbat
-                    values[3].Value = strReadStr.Substring(index, 3);
-                    index += 11;
-                    // stationId
-                    values[4].Value = strReadStr.Substring(index, 12);
-                    index += 20;
-                    // signal
-                    len = strReadStr.IndexOf("\"", index) - index;
-                    values[5].Value = strReadStr.Substring(index, len);
-                    index += len + 8;
-                    // steps
-                    len = strReadStr.IndexOf("\"", index) - index;
-                    values[6].Value = strReadStr.Substring(index, len);
-                    index += len + 8;
-                    // date
-                    values[7].Value = strReadStr.Substring(index, 10);
-                    // time
-                    values[8].Value = strReadStr.Substring(index, 19);
-                    index += 30;
-                    // version
-                    len = strReadStr.IndexOf("\"", index) - index;
-                    values[9].Value = strReadStr.Substring(index, len);
-                    index += len + 8;
-                    // frameSn
-                    len = strReadStr.IndexOf("\"", index) - index;
-                    values[10].Value = strReadStr.Substring(index, len);
-                    // isRepeatRpt 列，0-没有重复, 1 - 重复
-                    values[11].Value = 0;
-#endif
-
-#if true
-                    if (repeatCnt != 0xFFFF)
+                    try
                     {
-                        // 重复导入检查, 前2条重复则停止导入
-                        sbSql.Clear();
-                        sbSql.Append("select id from tblLog where "
-                            + "deviceId = " + values[1].Value + " and "
-                            + "stationId = " + values[4].Value + " and "
-                            + "datetime = '" + values[8].Value + "'");
-                        if (_sqldb.ExecuteScalar(sbSql.ToString()) != null)
-                        {
-                            repeatCnt++;
-                            if (repeatCnt == 2)
-                                break;
-                            else
-                                continue;
-                        }
-                            
-                        repeatCnt = 0xFFFF;
-                    }
-#endif
+                        index = strReadStr.IndexOf("\"di\"");
+                        if (index < 0) continue;
 
-#if true
+                        // id 列自动生成
+                        //values[0].Value = 0;
+
+                        index += 6;
+                        // devId
+                        values[1].Value = strReadStr.Substring(index, 12);
+                        index += 20;
+                        // devStatus
+                        values[2].Value = strReadStr.Substring(index, 1);
+                        index += 9;
+                        // devVbat
+                        values[3].Value = strReadStr.Substring(index, 3);
+                        index += 11;
+                        // stationId
+                        values[4].Value = strReadStr.Substring(index, 12);
+                        index += 20;
+                        // signal
+                        len = strReadStr.IndexOf("\"", index) - index;
+                        values[5].Value = strReadStr.Substring(index, len);
+                        index += len + 8;
+                        // steps
+                        len = strReadStr.IndexOf("\"", index) - index;
+                        values[6].Value = strReadStr.Substring(index, len);
+                        index += len + 8;
+                        // date
+                        values[7].Value = strReadStr.Substring(index, 10);
+                        // time
+                        values[8].Value = strReadStr.Substring(index, 19);
+                        index += 30;
+                        // version
+                        len = strReadStr.IndexOf("\"", index) - index;
+                        values[9].Value = strReadStr.Substring(index, len);
+                        index += len + 8;
+                        // frameSn
+                        len = strReadStr.IndexOf("\"", index) - index;
+                        values[10].Value = strReadStr.Substring(index, len);
+                        // isRepeatRpt 列，0-没有重复, 1 - 重复
+                        values[11].Value = 1;
+
+                        // 重复导入检查, 前2条重复则停止导入
+                        if (repeatCnt != 0xFFFF)
+                        {
+                            if (_sqldb.ExecuteScalar( "select id from tblLog where"
+                                + " deviceId = " + values[1].Value + " and"
+                                + " stationId = " + values[4].Value + " and"
+                                + " datetime = '" + values[8].Value + "'") != null)
+                            {
+                                repeatCnt++;
+                                if (repeatCnt == 2) 
+                                    break;
+                                else 
+                                    continue;
+                            }
+                            repeatCnt = 0xFFFF;
+                        }
+#if fa
                     // 重复上报标记设置
                     time = Convert.ToDateTime(values[8].Value);
                     sbSql.Clear();
@@ -627,39 +584,85 @@ namespace BuBuJi_DataAnalysisTool
                         values[11].Value = 1;
                     }
 #endif
+                        // 提交插入命令
+                        cmd.ExecuteNonQuery();
 
-                    // 提交插入命令
-                    cmd.ExecuteNonQuery();
-
-                    cnt++;
+                        cnt++;
+                    }
+                    catch (Exception ex)
+                    {
+                        ShowMsg("第" + tbLog.Rows.Count.ToString() + "行日志格式错误，" + ex.Message + "\r\n", Color.Red);
+                        break;
+                    }
                 }
-                catch (Exception ex)
+                sr.Close();
+
+#if true
+                // 重复上报标记设置
+                DataTable tbZeroStep_devs = _sqldb.ExecuteReaderToDataTable(
+                    "select distinct deviceId from tblLog ");
+                DateTime srcRptTime = DateTime.Now, tmpTime;
+                byte srcRptFsn = 0xFF, tmpFsn;
+                List<int> srcRptIDs = new List<int>();
+                int tmpCnt;
+                SQLiteDataReader reader;
+                foreach (DataRow row in tbZeroStep_devs.Rows)
                 {
-                    ShowMsg("第" + tbLog.Rows.Count.ToString() + "行日志格式错误，" + ex.Message + "\r\n", Color.Red);
-                    break;
+                    tmpCnt = 0;
+                    reader = _sqldb.ExecuteReader(
+                        "select id, datetime, frameSn, isRepeatRpt from tblLog" +
+                        " where deviceId = " + row[0] + " order by frameSn, datetime");
+                    while (reader.Read())
+                    {
+                        tmpCnt++;
+                        if (tmpCnt == 1)
+                        {
+                            srcRptTime = reader.GetDateTime(1);
+                            srcRptFsn = reader.GetByte(2);
+                            if (reader.GetByte(3) == 0) continue;
+
+                            srcRptIDs.Add(reader.GetInt32(0));
+                        }
+                        else
+                        {
+                            tmpTime = reader.GetDateTime(1);
+                            tmpFsn = reader.GetByte(2);
+                            if (tmpFsn == srcRptFsn && tmpTime <= srcRptTime.AddSeconds(3)) continue;
+        
+                            srcRptTime = tmpTime;
+                            srcRptFsn = tmpFsn;
+                            if (reader.GetByte(3) == 0) continue;
+
+                            srcRptIDs.Add(reader.GetInt32(0));
+                        }
+                    }
                 }
-            }
-            sr.Close();
+                foreach (int id in srcRptIDs)
+                {
+                    _sqldb.ExecuteNonQuery("update tblLog set isRepeatRpt = 0 where id = " + id);
+                }
+#endif
 
-            // 重复上报标记设置
+                // 提交事务处理
+                trans.Commit();
 
+                if (repeatCnt == 2)
+                {
+                    ShowMsg("导入已终止：前2条记录数据库中已存在，可能该日志文件已导入过了\r\n", Color.Red, false);
+                }
+                else
+                {
+                    // 数据、界面初始化
+                    DataInit();
+                }
 
-            // 提交事务处理
-            trans.Commit();
+                timer.Stop();
+                ShowMsg("导入 " + cnt + " 条记录完成！ 用时 " +
+                    timer.Elapsed.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
 
-            if(repeatCnt == 2)
-            {
-                ShowMsg("导入已终止：前2条记录数据库中已存在，可能该日志文件已导入过了\r\n", Color.Red, false);
-            }
-            else
-            {
-                // 数据、界面初始化
-                DataInit();
-            }
-
-            timer.Stop();
-            ShowMsg("导入 " + cnt + " 条记录完成！ 用时 " +
-                timer.Elapsed.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
+            }));
+            t.IsBackground = true;
+            t.Start();
 
             //ShowMsg((repeatCnt == 0 ? "" : "排除重复记录 " + repeatCnt + " 条\r\n"), Color.Red, false);
 
@@ -920,6 +923,13 @@ namespace BuBuJi_DataAnalysisTool
             string whereDate = "";
             DateTime date = DateTime.Now;
 
+            tbDates.Clear();
+            tbStations.Clear();
+            tbDevices.Clear();
+            tbDates.BeginLoadData();
+            tbStations.BeginLoadData();
+            tbDevices.BeginLoadData();
+
             if(chkDate.Checked && DateTime.TryParse(txtDate.Text, out date))
             {
                 whereDate = " where date = '" + date.ToString("yyyy-MM-dd") + "' ";
@@ -936,7 +946,6 @@ namespace BuBuJi_DataAnalysisTool
                 "select date, count(*) from tblLog where isRepeatRpt = 0 group by date" :
                 "select date, count(*) from tblLog group by date");
             reader = _sqldb.ExecuteReader(sqlText);
-            tbDates.Clear();
             while (reader.Read())
             {
                 DataRow row = tbDates.NewRow();
@@ -954,7 +963,6 @@ namespace BuBuJi_DataAnalysisTool
                 + whereDate + "group by stationId, deviceId ) as t" +
                 " group by stationId";
             reader = _sqldb.ExecuteReader(sqlText);
-            tbStations.Clear();
             while (reader.Read())
             {
                 DataRow row = tbStations.NewRow();
@@ -972,7 +980,6 @@ namespace BuBuJi_DataAnalysisTool
                 + whereDate + (whereDate != "" ? " and isRepeatRpt = 0 " : " where isRepeatRpt = 0") +
                 " group by deviceId";
             reader = _sqldb.ExecuteReader(sqlText);
-            tbDevices.Clear();
             while (reader.Read())
             {
                 DataRow row = tbDevices.NewRow();
@@ -983,6 +990,10 @@ namespace BuBuJi_DataAnalysisTool
                 tbDevices.Rows.Add(row);
             }
             reader.Close();
+
+            tbDates.EndLoadData();
+            tbStations.EndLoadData();
+            tbDevices.EndLoadData();
 
             whereDate = (whereDate != "" ? "" + date.ToString("yyyy-MM-dd") : "所有");
             UpdateGrpDates(tbDates.Rows.Count);
