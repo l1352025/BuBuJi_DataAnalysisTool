@@ -81,6 +81,7 @@ namespace BuBuJi_DataAnalysisTool
             dgvDevice.TopLeftHeaderCell.Value = "序号";
 
             DataInit();
+            ReadDocInfo();
         }
 
         #region UI更新-方法
@@ -251,9 +252,6 @@ namespace BuBuJi_DataAnalysisTool
             // 总数、日期/基站/设备列表更新
             MainInfoListUpdate();
 
-            // 档案信息
-            ReadDocInfo();
-
             // 当前记录/页数
             _resultCnt = _recordCnt;
             UpdateResultCnt(_resultCnt);
@@ -327,33 +325,6 @@ namespace BuBuJi_DataAnalysisTool
 
             // 使用内存数据库
             _sqldb.MemoryDatabaseEable();
-        }
-
-        public DataTable ExcelToDataTable(string dataSource, string tblName)
-        {
-            DataTable tb = new DataTable();
-            string strConn = string.Empty;
-            string extension = Path.GetExtension(dataSource);
-
-            if (File.Exists(dataSource) == false) return tb;
-
-            if (extension == ".xls")
-                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";Extended Properties='Excel 8.0;HDR=YES;IMEX=1'";
-            else if (extension == ".xlsx")
-                strConn = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" + dataSource + ";Extended Properties='Excel 12.0;HDR=YES;IMEX=1'";
-            else
-                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";";
-
-            OleDbConnection conn = new OleDbConnection(strConn);
-            conn.Open();
-
-            string strSql = "select * from " + tblName;
-
-            OleDbDataAdapter oda = new OleDbDataAdapter(strSql, strConn);
-            oda.Fill(tb);
-            conn.Close();
-
-            return tb;
         }
         #endregion
 
@@ -460,7 +431,6 @@ namespace BuBuJi_DataAnalysisTool
                 return;
             }
             strFileName = openFileDlg.FileName;
-
 
             ShowMsg("Log导入中。。。\r\n", Color.Blue, false, true);
 
@@ -598,48 +568,51 @@ namespace BuBuJi_DataAnalysisTool
                 sr.Close();
 
 #if true
-                // 重复上报标记设置
-                DataTable tbZeroStep_devs = _sqldb.ExecuteReaderToDataTable(
-                    "select distinct deviceId from tblLog ");
-                DateTime srcRptTime = DateTime.Now, tmpTime;
-                byte srcRptFsn = 0xFF, tmpFsn;
-                List<int> srcRptIDs = new List<int>();
-                int tmpCnt;
-                SQLiteDataReader reader;
-                foreach (DataRow row in tbZeroStep_devs.Rows)
+                if (repeatCnt == 0xFFFF)
                 {
-                    tmpCnt = 0;
-                    reader = _sqldb.ExecuteReader(
-                        "select id, datetime, frameSn, isRepeatRpt from tblLog" +
-                        " where deviceId = " + row[0] + " order by frameSn, datetime");
-                    while (reader.Read())
+                    // 重复上报标记设置
+                    DataTable tbZeroStep_devs = _sqldb.ExecuteReaderToDataTable(
+                        "select distinct deviceId from tblLog ");
+                    DateTime srcRptTime = DateTime.Now, tmpTime;
+                    byte srcRptFsn = 0xFF, tmpFsn;
+                    List<int> srcRptIDs = new List<int>();
+                    int tmpCnt;
+                    SQLiteDataReader reader;
+                    foreach (DataRow row in tbZeroStep_devs.Rows)
                     {
-                        tmpCnt++;
-                        if (tmpCnt == 1)
+                        tmpCnt = 0;
+                        reader = _sqldb.ExecuteReader(
+                            "select id, datetime, frameSn, isRepeatRpt from tblLog" +
+                            " where deviceId = " + row[0] + " order by frameSn, datetime");
+                        while (reader.Read())
                         {
-                            srcRptTime = reader.GetDateTime(1);
-                            srcRptFsn = reader.GetByte(2);
-                            if (reader.GetByte(3) == 0) continue;
+                            tmpCnt++;
+                            if (tmpCnt == 1)
+                            {
+                                srcRptTime = reader.GetDateTime(1);
+                                srcRptFsn = reader.GetByte(2);
+                                if (reader.GetByte(3) == 0) continue;
 
-                            srcRptIDs.Add(reader.GetInt32(0));
-                        }
-                        else
-                        {
-                            tmpTime = reader.GetDateTime(1);
-                            tmpFsn = reader.GetByte(2);
-                            if (tmpFsn == srcRptFsn && tmpTime <= srcRptTime.AddSeconds(3)) continue;
-        
-                            srcRptTime = tmpTime;
-                            srcRptFsn = tmpFsn;
-                            if (reader.GetByte(3) == 0) continue;
+                                srcRptIDs.Add(reader.GetInt32(0));
+                            }
+                            else
+                            {
+                                tmpTime = reader.GetDateTime(1);
+                                tmpFsn = reader.GetByte(2);
+                                if (tmpFsn == srcRptFsn && tmpTime <= srcRptTime.AddSeconds(3)) continue;
 
-                            srcRptIDs.Add(reader.GetInt32(0));
+                                srcRptTime = tmpTime;
+                                srcRptFsn = tmpFsn;
+                                if (reader.GetByte(3) == 0) continue;
+
+                                srcRptIDs.Add(reader.GetInt32(0));
+                            }
                         }
                     }
-                }
-                foreach (int id in srcRptIDs)
-                {
-                    _sqldb.ExecuteNonQuery("update tblLog set isRepeatRpt = 0 where id = " + id);
+                    foreach (int id in srcRptIDs)
+                    {
+                        _sqldb.ExecuteNonQuery("update tblLog set isRepeatRpt = 0 where id = " + id);
+                    }
                 }
 #endif
 
@@ -665,7 +638,6 @@ namespace BuBuJi_DataAnalysisTool
             t.Start();
 
             //ShowMsg((repeatCnt == 0 ? "" : "排除重复记录 " + repeatCnt + " 条\r\n"), Color.Red, false);
-
         }
         #endregion
         
@@ -825,14 +797,17 @@ namespace BuBuJi_DataAnalysisTool
 
                         // 选择文件位置
                         SaveFileDialog savefileDlg = new SaveFileDialog();
-                        savefileDlg.Filter = "*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
-                        savefileDlg.DefaultExt = ".txt";
+                        savefileDlg.Filter = "*.xlsx(Excel文件)|*.xlsx|*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
+                        savefileDlg.DefaultExt = ".xlsx";
                         savefileDlg.FileName = "XX查询结果-第" + _currPage + "页";
 
                         if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
                         // 导出
-                        DataGridViewToFile(dgvLog, savefileDlg.FileName);
+                        if (savefileDlg.FileName.Contains("xlsx"))
+                            ExportToExcel(dgvLog, savefileDlg.FileName);
+                        else
+                            ExportToFile(dgvLog, savefileDlg.FileName);
 
                         ShowMsg("导出 当前结果-第" + _currPage + "页 完成！\r\n", Color.Green, false);
                     }
@@ -877,7 +852,7 @@ namespace BuBuJi_DataAnalysisTool
                         if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
                         // 导出
-                        DataTableToFile(tb, savefileDlg.FileName);
+                        ExportToFile(tb, savefileDlg.FileName);
 
                         ShowMsg("导出 当前结果-所有记录 完成！\r\n", Color.Green, false);
                     }
@@ -918,8 +893,9 @@ namespace BuBuJi_DataAnalysisTool
         // 统计-总数、日期/基站/设备列表
         private void MainInfoListUpdate()
         {
-            string sqlText = "";
             SQLiteDataReader reader;
+            DataRow row;
+            string sqlText = "";
             string whereDate = "";
             DateTime date = DateTime.Now;
 
@@ -948,7 +924,7 @@ namespace BuBuJi_DataAnalysisTool
             reader = _sqldb.ExecuteReader(sqlText);
             while (reader.Read())
             {
-                DataRow row = tbDates.NewRow();
+                row = tbDates.NewRow();
                 row.BeginEdit();
                 row["日期"] = reader.GetString(0);
                 row["记录条数"] = reader.GetInt64(1);
@@ -965,7 +941,7 @@ namespace BuBuJi_DataAnalysisTool
             reader = _sqldb.ExecuteReader(sqlText);
             while (reader.Read())
             {
-                DataRow row = tbStations.NewRow();
+                row = tbStations.NewRow();
                 row.BeginEdit();
                 row["基站ID"] = reader.GetInt64(0);
                 row["设备个数"] = reader.GetInt32(1);
@@ -982,7 +958,7 @@ namespace BuBuJi_DataAnalysisTool
             reader = _sqldb.ExecuteReader(sqlText);
             while (reader.Read())
             {
-                DataRow row = tbDevices.NewRow();
+                row = tbDevices.NewRow();
                 row.BeginEdit();
                 row["设备ID"] = reader.GetInt64(0);
                 row["上报次数"] = reader.GetInt32(1);
@@ -1011,8 +987,9 @@ namespace BuBuJi_DataAnalysisTool
             DataRow[] selRows;
             int stepStat, stepStatLast;
             int tmpCnt, stepErrCnt, dayUnRptCnt;
+            long cnt;
             StringBuilder strBuilder = new StringBuilder();
-            DataTable tbZeroStep_Devs = null, tbAllRpt_Devs = null, tbAllRpt_DevSteps = null;
+            DataTable tbZeroStep_Devs = null, tbAllRpt_Devs = null;
 
             if (chkDate.Checked && DateTime.TryParse(txtDate.Text, out date))
             {
@@ -1022,48 +999,29 @@ namespace BuBuJi_DataAnalysisTool
             // 读出档案列表
             ReadDocInfo();
 
-            // 查询步数为0档案
+            // 查询步数为0设备ID
             sqlText = "select distinct deviceId from tblLog "
-                + whereDate + (whereDate != "" ? " and stepSum = 0 " : " where stepSum = 0")
-                + " order by deviceId";
+                + whereDate + (whereDate != "" ? " and stepSum = 0 order by deviceId"
+                : " where stepSum = 0 order by deviceId");
             tbZeroStep_Devs = _sqldb.ExecuteReaderToDataTable(sqlText);
 
-            // 查询所有上报的设备ID、步数、时间
-            sqlText = "select deviceId, stepSum, date from tblLog "
-                + whereDate + (whereDate != "" ? " and isRepeatRpt = 0 " : " where isRepeatRpt = 0")
-                + " order by deviceId, datetime";
-            tbAllRpt_DevSteps = _sqldb.ExecuteReaderToDataTable(sqlText);
-
-            // 统计-上报次数、步数状态
+            // 统计-上报次数
             foreach (DataRow row in tbDoc.Rows)
             {
-                selRows = tbAllRpt_DevSteps.Select("deviceId = " + row["设备ID"]);
-                if (selRows.Length > 0)
+                cnt = (long)_sqldb.ExecuteScalar("select count(*) from tblLog "
+                    + whereDate + (whereDate != "" ? " and isRepeatRpt = 0 and deviceId = " + row["设备ID"]  
+                    : " where isRepeatRpt = 0 and deviceId = " + row["设备ID"] ));
+                if (cnt > 0)
                 {
                     // total
-                    row[1] = selRows.Length;     
+                    row[1] = cnt;     
 
                     // day1 -> day5
                     for (int i = 2; i < 5 + 2 && dgvDoc.Columns[i].Visible; i++)
                     {
-                        row[i] = selRows.Count(q => Convert.ToDateTime(q[2]).ToString("yyyy-MM-dd") == dgvDoc.Columns[i].HeaderText);
-                    }
-
-                    // stepStatus
-                    if (tbZeroStep_Devs.Select("deviceId = " + row["设备ID"]).Length > 0)
-                    {
-                        strBuilder.Clear();
-                        stepStatLast = 0xFF;
-                        foreach (DataRow dr in selRows)
-                        {
-                            stepStat = ((long)dr[1] == 0 ? 0 : 1);
-                            if (stepStat != stepStatLast)
-                            {
-                                stepStatLast = stepStat;
-                                strBuilder.Append(stepStat + "->");
-                            }
-                        }
-                        row[7] = strBuilder.ToString(0, strBuilder.Length - 2);
+                        row[i] = (long)_sqldb.ExecuteScalar("select count(*) from tblLog"
+                            + " where date = '" + dgvDoc.Columns[i].HeaderText + "' and isRepeatRpt = 0 and deviceId = " + row["设备ID"]
+                        );
                     }
                 }
                 else
@@ -1076,6 +1034,34 @@ namespace BuBuJi_DataAnalysisTool
                     row[6] = 0;
                     row[7] = "";    // stepStatus
                 }
+            }
+
+            // 统计-步数为0的步数状态
+            foreach (DataRow row in tbZeroStep_Devs.Rows)
+            {
+                selRows = tbDoc.Select("设备ID = " + row[0]);
+
+                if (selRows.Length == 0) continue;
+
+                strBuilder.Clear();
+                stepStatLast = 0xFF;
+                sqlText = "select deviceId, stepSum from tblLog "
+                    + whereDate + (whereDate != "" ? " and isRepeatRpt = 0 and deviceId = " + row[0]
+                    : " where isRepeatRpt = 0 and deviceId = " + row[0]) 
+                    + " order by deviceId, datetime";
+                reader = _sqldb.ExecuteReader(sqlText);
+                while(reader.Read())
+                {
+                    stepStat = (reader.GetInt32(1) == 0 ? 0 : 1);
+                    if (stepStat != stepStatLast)
+                    {
+                        stepStatLast = stepStat;
+                        strBuilder.Append(stepStat + "->");
+                    }
+                }
+                reader.Close();
+
+                selRows[0]["步数状态"] = strBuilder.ToString(0, strBuilder.Length - 2);
             }
 
             // 统计-未上报的设备数
@@ -1109,7 +1095,6 @@ namespace BuBuJi_DataAnalysisTool
 
             // clear
             tbAllRpt_Devs = null;
-            tbAllRpt_DevSteps = null;
             tbZeroStep_Devs = null;
         }
 
@@ -1133,9 +1118,8 @@ namespace BuBuJi_DataAnalysisTool
         }
         #endregion
 
-        #region 导出-日期列表/基站列表/设备列表
-        // 导出列表
-        private void DataTableToFile(DataTable tb, string toSaveName)
+        #region 数据表/数据视图-导出
+        private void ExportToFile(DataTable tb, string toSaveName)
         {
             FileStream fstream = File.Open(toSaveName, FileMode.Create, FileAccess.Write);
             StreamWriter writer = new StreamWriter(fstream);
@@ -1178,7 +1162,7 @@ namespace BuBuJi_DataAnalysisTool
             writer.Close();
         }
 
-        private void DataGridViewToFile(DataGridView dgv, string toSaveName)
+        private void ExportToFile(DataGridView dgv, string toSaveName)
         {
             FileStream fstream = File.Open(toSaveName, FileMode.Create, FileAccess.Write);
             StreamWriter writer = new StreamWriter(fstream);
@@ -1221,6 +1205,261 @@ namespace BuBuJi_DataAnalysisTool
             writer.Flush();
             writer.Close();
         }
+
+        public DataTable ExcelToDataTable(string dataSource, string tblName)
+        {
+            DataTable tb = new DataTable();
+            string strConn = string.Empty;
+            string extension = Path.GetExtension(dataSource);
+
+            if (File.Exists(dataSource) == false) return tb;
+
+            if (extension == ".xls")
+                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";Extended Properties='Excel 8.0;HDR=YES;IMEX=1'";
+            else if (extension == ".xlsx")
+                strConn = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" + dataSource + ";Extended Properties='Excel 12.0;HDR=YES;IMEX=1'";
+            else
+                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";";
+
+            OleDbConnection conn = new OleDbConnection(strConn);
+            conn.Open();
+
+            string strSql = "select * from " + tblName;
+
+            OleDbDataAdapter oda = new OleDbDataAdapter(strSql, strConn);
+            oda.Fill(tb);
+            conn.Close();
+
+            return tb;
+        }
+        public void DataTableToExcel(string dataSource, string tblName, DataTable srcTable)
+        {
+            string strConn = string.Empty;
+            string extension = Path.GetExtension(dataSource);
+
+            if (File.Exists(dataSource) == false) throw new Exception("数据源不存在");
+
+            if (extension == ".xls")
+                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";Extended Properties='Excel 8.0;HDR=YES;IMEX=1'";
+            else if (extension == ".xlsx")
+                strConn = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" + dataSource + ";Extended Properties='Excel 12.0;HDR=YES;IMEX=1'";
+            else
+                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";";
+
+            OleDbConnection conn = new OleDbConnection(strConn);
+            conn.Open();
+            OleDbTransaction trans = conn.BeginTransaction();
+            
+
+            
+            trans.Commit();
+            conn.Close();
+
+        }
+        public void ExportToExcel(DataTable dt, string toSaveName)
+        {
+            Microsoft.Office.Interop.Excel.Application appexcel = new Microsoft.Office.Interop.Excel.Application();
+            Microsoft.Office.Interop.Excel.Workbook workbookdata;
+            Microsoft.Office.Interop.Excel.Worksheet worksheetdata;
+            Microsoft.Office.Interop.Excel.Range rangedata;
+            System.Reflection.Missing miss = System.Reflection.Missing.Value;
+
+            // 设置对象不可见
+            appexcel.Visible = false;
+
+            //System.Globalization.CultureInfo currentci = System.Threading.Thread.CurrentThread.CurrentCulture;
+            //System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-us");
+            workbookdata = appexcel.Workbooks.Add(miss);
+            worksheetdata = (Microsoft.Office.Interop.Excel.Worksheet)workbookdata.Worksheets.Add(miss, miss, miss, miss);
+
+            // 给工作表赋名称
+            worksheetdata.Name = "saved";
+
+            // 表头
+            for (int i = 0; i < dt.Columns.Count; i++)
+            {
+                worksheetdata.Cells[1, i + 1] = dt.Columns[i].ColumnName.ToString();
+            }
+
+            //因为第一行已经写了表头，所以所有数据都应该从a2开始
+            rangedata = worksheetdata.get_Range("a2", miss);
+
+            //使用range块对excel单元格赋值
+            Microsoft.Office.Interop.Excel.Range xlrang = null;
+
+            //irowcount为实际行数，最大行
+            int irowcount = dt.Rows.Count;
+            int iparstedrow = 0, icurrsize = 0;
+
+            //ieachsize为每次写行的数值，可以自己设置
+            int ieachsize = 1000;
+
+            //icolumnaccount为实际列数，最大列数
+            int icolumnaccount = dt.Columns.Count;
+
+            //在内存中声明一个ieachsize×icolumnaccount的数组，ieachsize是每次最大存储的行数，icolumnaccount就是存储的实际列数
+            object[,] objval = new object[ieachsize, icolumnaccount];
+
+            icurrsize = ieachsize;
+
+            while (iparstedrow < irowcount)
+            {
+                if ((irowcount - iparstedrow) < ieachsize)
+                    icurrsize = irowcount - iparstedrow;
+
+                //用for循环给数组赋值
+                for (int i = 0; i < icurrsize; i++)
+                {
+                    for (int j = 0; j < icolumnaccount; j++)
+                        objval[i, j] = dt.Rows[i + iparstedrow][j].ToString();
+                    System.Windows.Forms.Application.DoEvents();
+                }
+
+                string cellBegin = "A" + ((int)(iparstedrow + 2)).ToString();
+                string cellEnd = "";
+
+                if (icolumnaccount <= 26)
+                {
+                    cellEnd = ((char)('A' + icolumnaccount - 1)).ToString() + ((int)(iparstedrow + icurrsize + 1)).ToString();
+                }
+                else
+                {
+                    cellEnd = ((char)('A' + (icolumnaccount / 26 - 1))).ToString() + ((char)('A' + (icolumnaccount % 26 - 1))).ToString() + ((int)(iparstedrow + icurrsize + 1)).ToString();
+                }
+                xlrang = worksheetdata.get_Range(cellBegin, cellEnd);
+
+                // 调用range的value2属性，把内存中的值赋给excel
+                xlrang.Value2 = objval;
+
+                iparstedrow = iparstedrow + icurrsize;
+            }
+
+            //保存工作表
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(xlrang);
+            xlrang = null;
+
+            //调用方法关闭excel进程
+            appexcel.Visible = true;
+
+            //设置禁止弹出保存和覆盖的询问提示框
+            appexcel.DisplayAlerts = false;
+            appexcel.AlertBeforeOverwriting = false;
+
+            //保存工作簿
+            appexcel.Application.Workbooks.Add(true).Save();
+
+            //保存excel文件
+            appexcel.Save(toSaveName);
+
+            //确保Excel进程关闭
+            appexcel.Quit();    //可以直接打开文件
+            appexcel = null;
+
+        }
+
+        public void ExportToExcel(DataGridView dgv, string toSaveName)
+        {
+            Microsoft.Office.Interop.Excel.Application appexcel = new Microsoft.Office.Interop.Excel.Application();
+            Microsoft.Office.Interop.Excel.Workbook workbookdata;
+            Microsoft.Office.Interop.Excel.Worksheet worksheetdata;
+            Microsoft.Office.Interop.Excel.Range rangedata;
+            System.Reflection.Missing miss = System.Reflection.Missing.Value;
+
+            // 设置对象不可见
+            appexcel.Visible = false;
+
+            //System.Globalization.CultureInfo currentci = System.Threading.Thread.CurrentThread.CurrentCulture;
+            //System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-us");
+            workbookdata = appexcel.Workbooks.Add(miss);
+            worksheetdata = (Microsoft.Office.Interop.Excel.Worksheet)workbookdata.Worksheets.Add(miss, miss, miss, miss);
+
+            // 给工作表赋名称
+            worksheetdata.Name = "saved";
+
+            // 表头
+            for (int i = 0; i < dgv.Columns.Count; i++)
+            {
+                worksheetdata.Cells[1, i + 1] = dgv.Columns[i].HeaderText;
+            }
+
+            //因为第一行已经写了表头，所以所有数据都应该从a2开始
+            rangedata = worksheetdata.get_Range("a2", miss);
+
+            //使用range块对excel单元格赋值
+            Microsoft.Office.Interop.Excel.Range xlrang = null;
+
+            //irowcount为实际行数，最大行
+            int irowcount = dgv.Rows.Count;
+            int iparstedrow = 0, icurrsize = 0;
+
+            //ieachsize为每次写行的数值，可以自己设置
+            int ieachsize = 1000;
+
+            //icolumnaccount为实际列数，最大列数
+            int icolumnaccount = dgv.Columns.Count;
+
+            //在内存中声明一个ieachsize×icolumnaccount的数组，ieachsize是每次最大存储的行数，icolumnaccount就是存储的实际列数
+            object[,] objval = new object[ieachsize, icolumnaccount];
+
+            icurrsize = ieachsize;
+
+            while (iparstedrow < irowcount)
+            {
+                if ((irowcount - iparstedrow) < ieachsize)
+                    icurrsize = irowcount - iparstedrow;
+
+                //用for循环给数组赋值
+                for (int i = 0; i < icurrsize; i++)
+                {
+                    for (int j = 0; j < icolumnaccount; j++)
+                        objval[i, j] = dgv.Rows[i + iparstedrow].Cells[j].Value.ToString();
+                    System.Windows.Forms.Application.DoEvents();
+                }
+
+                string cellBegin = "A" + ((int)(iparstedrow + 2)).ToString();
+                string cellEnd = "";
+
+                if (icolumnaccount <= 26)
+                {
+                    cellEnd = ((char)('A' + icolumnaccount - 1)).ToString() + ((int)(iparstedrow + icurrsize + 1)).ToString();
+                }
+                else
+                {
+                    cellEnd = ((char)('A' + (icolumnaccount / 26 - 1))).ToString() + ((char)('A' + (icolumnaccount % 26 - 1))).ToString() + ((int)(iparstedrow + icurrsize + 1)).ToString();
+                }
+                xlrang = worksheetdata.get_Range(cellBegin, cellEnd);
+
+                // 调用range的value2属性，把内存中的值赋给excel
+                xlrang.Value2 = objval;
+
+                iparstedrow = iparstedrow + icurrsize;
+            }
+
+            //保存工作表
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(xlrang);
+            xlrang = null;
+
+            //调用方法关闭excel进程
+            appexcel.Visible = true;
+
+            //设置禁止弹出保存和覆盖的询问提示框
+            appexcel.DisplayAlerts = false;
+            appexcel.AlertBeforeOverwriting = false;
+
+            //保存工作簿
+            //workbookdata.Save();
+
+            //保存excel文件
+            //appexcel.Save(toSaveName);
+
+            //确保Excel进程关闭
+            //appexcel.Quit();    //可以直接打开文件
+            //appexcel = null;
+
+        }
+        #endregion
+
+        #region 导出-日期列表/基站列表/设备列表
         private void devices导出列表ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (tbDevices.Rows.Count == 0) return;
@@ -1235,7 +1474,7 @@ namespace BuBuJi_DataAnalysisTool
             if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
             // 导出
-            DataGridViewToFile(dgvDevice, savefileDlg.FileName);
+            ExportToFile(dgvDevice, savefileDlg.FileName);
 
             ShowMsg("导出设备列表成功！\r\n", Color.Green, false);
         }
@@ -1277,7 +1516,7 @@ namespace BuBuJi_DataAnalysisTool
             if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
             // 导出
-            DataGridViewToFile(dgvStation, savefileDlg.FileName);
+            ExportToFile(dgvStation, savefileDlg.FileName);
 
             ShowMsg("导出基站列表成功！\r\n", Color.Green, false);
         }
@@ -1296,13 +1535,19 @@ namespace BuBuJi_DataAnalysisTool
             if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
             // 导出
-            DataGridViewToFile(dgvDate, savefileDlg.FileName);
+            ExportToFile(dgvDate, savefileDlg.FileName);
 
             ShowMsg("导出日期列表成功！\r\n", Color.Green, false);
         }
         private void dates删除记录ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (dgvDate.SelectedRows.Count == 0) return;
+
+            if (DialogResult.OK != MessageBox.Show("删除数据库记录吗？ \r\n 删除后将是无法恢复的！",
+                "警告", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning))
+            {
+                return;
+            }
 
             if (dgvDate.SelectedRows.Count == tbDates.Rows.Count)
             {
@@ -1319,6 +1564,7 @@ namespace BuBuJi_DataAnalysisTool
                     tbDates.Rows.Remove(((DataRowView)(row.DataBoundItem)).Row);
                     ShowMsg(sbDate.ToString() + " 数据库记录已删除！\r\n", Color.Green, false);
                 }
+                DataInit();
             }
         }
         #endregion
@@ -1548,11 +1794,10 @@ namespace BuBuJi_DataAnalysisTool
             {
                 ShowMsg("导入已终止：所有档案数据库中已存在\r\n", Color.Red, false);
             }
-            else
-            {
-                // 读出档案到列表
-                ReadDocInfo();
-            }
+
+            // 读出档案到列表
+            ReadDocInfo();
+
             timer.Stop();
             ShowMsg("导入 " + cnt + " 条档案完成！ 用时 " +
                 timer.Elapsed.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
@@ -1676,7 +1921,7 @@ namespace BuBuJi_DataAnalysisTool
                         if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
                         // 导出
-                        DataGridViewToFile(dgvDoc, savefileDlg.FileName);
+                        ExportToFile(dgvDoc, savefileDlg.FileName);
 
                         ShowMsg("导出档案信息完成！\r\n", Color.Green, false);
                     }
