@@ -417,6 +417,398 @@ namespace BuBuJi_DataAnalysisTool
         
         #endregion
 
+        #region 数据表/数据视图-导出
+        private void ExportToFile(DataTable tb, string toSaveName)
+        {
+            FileStream fstream = File.Open(toSaveName, FileMode.Create, FileAccess.Write);
+            StreamWriter writer = new StreamWriter(fstream);
+            StringBuilder strBuilder = new StringBuilder(1024);
+
+            int dateIdx = 0xFF;
+
+            // 表头
+            if (tb.Rows.Count > 0)
+            {
+                strBuilder.Clear();
+
+                strBuilder.Append("序号" + "  ");
+                for (int i = 0; i < tb.Columns.Count; i++)
+                {
+                    if (tb.Columns[i].ColumnName == "日期") dateIdx = i;
+                    strBuilder.Append(tb.Columns[i].ColumnName + "  ");
+                }
+                strBuilder.Remove(strBuilder.Length - 2, 2);
+
+                writer.WriteLine(strBuilder.ToString());
+                writer.Flush();
+            }
+
+            // 表行记录
+            for (int k = 0; k < tb.Rows.Count; k++)
+            {
+                strBuilder.Clear();
+
+                strBuilder.Append(k + 1 + "  ");
+                for (int i = 0; i < tb.Columns.Count; i++)
+                {
+                    strBuilder.Append((i == dateIdx ? ((DateTime)tb.Rows[k][i]).ToString("yyyy-MM-dd") : tb.Rows[k][i]) + "  ");
+                }
+                strBuilder.Remove(strBuilder.Length - 2, 2);
+
+                writer.WriteLine(strBuilder.ToString());
+            }
+            writer.Flush();
+            writer.Close();
+        }
+
+        private void ExportToFile(DataGridView dgv, string toSaveName)
+        {
+            FileStream fstream = File.Open(toSaveName, FileMode.Create, FileAccess.Write);
+            StreamWriter writer = new StreamWriter(fstream);
+            StringBuilder strBuilder = new StringBuilder(1024);
+
+            int dateIdx = 0xFF;
+
+            // 表头
+            if (dgv.Rows.Count > 0)
+            {
+                strBuilder.Clear();
+
+                strBuilder.Append("序号" + "  ");
+                for (int i = 0; i < dgv.Columns.Count; i++)
+                {
+                    if (dgv.Columns[i].HeaderText == "日期") dateIdx = i;
+                    strBuilder.Append(dgv.Columns[i].HeaderText + "  ");
+                }
+                strBuilder.Remove(strBuilder.Length - 2, 2);
+
+                writer.WriteLine(strBuilder.ToString());
+                writer.Flush();
+            }
+
+            // 表行记录
+            foreach (DataGridViewRow dr in dgv.Rows)
+            {
+                strBuilder.Clear();
+
+                strBuilder.Append(dr.Index + 1 + "  ");
+                for (int i = 0; i < dgv.Columns.Count; i++)
+                {
+                    strBuilder.Append((i == dateIdx ? ((DateTime)dr.Cells[i].Value).ToString("yyyy-MM-dd") :
+                        dr.Cells[i].Value) + "  ");
+                }
+                strBuilder.Remove(strBuilder.Length - 2, 2);
+
+                writer.WriteLine(strBuilder.ToString());
+            }
+            writer.Flush();
+            writer.Close();
+        }
+
+        public DataTable ExcelToDataTable(string dataSource, string tblName)
+        {
+            DataTable tb = new DataTable();
+            string strConn = string.Empty;
+            string extension = Path.GetExtension(dataSource);
+
+            if (File.Exists(dataSource) == false) return tb;
+
+            if (extension == ".xls")
+                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";Extended Properties='Excel 8.0;HDR=YES;IMEX=1'";
+            else if (extension == ".xlsx")
+                strConn = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" + dataSource + ";Extended Properties='Excel 12.0;HDR=YES;IMEX=1'";
+            else
+                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";";
+
+            OleDbConnection conn = new OleDbConnection(strConn);
+            conn.Open();
+
+            string strSql = "select * from " + tblName;
+
+            OleDbDataAdapter oda = new OleDbDataAdapter(strSql, strConn);
+            oda.Fill(tb);
+            conn.Close();
+
+            return tb;
+        }
+        public void DataTableToExcel(string dataSource, string tblName, DataTable srcTable)
+        {
+            string strConn = string.Empty;
+            string extension = Path.GetExtension(dataSource);
+
+            if (File.Exists(dataSource) == false) throw new Exception("数据源不存在");
+
+            if (extension == ".xls")
+                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";Extended Properties='Excel 8.0;HDR=YES;IMEX=1'";
+            else if (extension == ".xlsx")
+                strConn = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" + dataSource + ";Extended Properties='Excel 12.0;HDR=YES;IMEX=1'";
+            else
+                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";";
+
+            OleDbConnection conn = new OleDbConnection(strConn);
+            conn.Open();
+            OleDbTransaction trans = conn.BeginTransaction();
+
+
+
+            trans.Commit();
+            conn.Close();
+
+        }
+        public void ExportToExcel(DataTable dt, string toSaveName, string[,] formatCols = null)
+        {
+            Microsoft.Office.Interop.Excel.Application appexcel = new Microsoft.Office.Interop.Excel.Application();
+            Microsoft.Office.Interop.Excel.Workbook workbook;
+            Microsoft.Office.Interop.Excel.Worksheet worksheet;
+            Microsoft.Office.Interop.Excel.Range range;
+            System.Reflection.Missing miss = System.Reflection.Missing.Value;
+
+            // 设置对象不可见
+            appexcel.Visible = false;
+
+            // 保存/切换当前环境
+            System.Globalization.CultureInfo currentCI = System.Threading.Thread.CurrentThread.CurrentCulture;
+            System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-us");
+
+            // 创建工作簿、工作表
+            workbook = appexcel.Workbooks.Add(miss);
+            worksheet = (Microsoft.Office.Interop.Excel.Worksheet)workbook.Worksheets.Add(miss);
+
+            // 给工作表赋名称
+            worksheet.Name = "saved";
+
+            int iRowCnt = dt.Rows.Count;       // 总行数
+            int iColumnCnt = dt.Columns.Count; // 总列数
+            int iParstedRows = 0, iCurrRows = 0, iBufferRowCnt = 1000;   //iBufferRowCnt为每次写行的数值，可以自己设置
+
+            // 表头
+            for (int i = 0; i < dt.Columns.Count; i++)
+            {
+                worksheet.Cells[1, i + 1] = dt.Columns[i].ColumnName.ToString();
+            }
+
+            // 表内容
+
+            //在内存中声明一个iBufferRowCnt×iColumnCnt的数组，iBufferRowCnt是每次最大存储的行数，iColumnCnt就是存储的实际列数
+            object[,] objval = new object[iBufferRowCnt, iColumnCnt];
+
+            iCurrRows = iBufferRowCnt;
+
+            while (iParstedRows < iRowCnt)
+            {
+                if ((iRowCnt - iParstedRows) < iBufferRowCnt)
+                    iCurrRows = iRowCnt - iParstedRows;
+
+                //用for循环给数组赋值
+                for (int i = 0; i < iCurrRows; i++)
+                {
+                    for (int j = 0; j < iColumnCnt; j++)
+                        objval[i, j] = dt.Rows[i + iParstedRows][j].ToString();
+                    System.Windows.Forms.Application.DoEvents();
+                }
+
+                string cellBegin = "A" + ((int)(iParstedRows + 2)).ToString();
+                string cellEnd = "";
+
+                if (iColumnCnt <= 26)
+                {
+                    cellEnd = ((char)('A' + iColumnCnt - 1)).ToString() + ((int)(iParstedRows + iCurrRows + 1)).ToString();
+                }
+                else
+                {
+                    cellEnd = ((char)('A' + (iColumnCnt / 26 - 1))).ToString() + ((char)('A' + (iColumnCnt % 26 - 1))).ToString() + ((int)(iParstedRows + iCurrRows + 1)).ToString();
+                }
+                range = worksheet.get_Range(cellBegin, cellEnd);
+
+                // 调用range的value2属性，把内存中的值赋给excel
+                range.Value2 = objval;
+
+                iParstedRows = iParstedRows + iCurrRows;
+            }
+
+            // 设置单元格格式 - 所有
+            range = worksheet.get_Range("A1", (char)('A' + iColumnCnt - 1) + (iRowCnt + 1).ToString());
+            range.HorizontalAlignment = Microsoft.Office.Interop.Excel.XlHAlign.xlHAlignCenter; //居中
+            //加边框
+            //range.BorderAround(Microsoft.Office.Interop.Excel.XlLineStyle.xlContinuous, Microsoft.Office.Interop.Excel.XlBorderWeight.xlThin, Microsoft.Office.Interop.Excel.XlColorIndex.xlColorIndexAutomatic, null);
+            range.EntireColumn.AutoFit();   //自动调整列宽
+            //range.EntireRow.AutoFit();      //自动调整行高
+
+            // 设置单元格格式 - 表头
+            range = worksheet.get_Range("A1", (char)('A' + iColumnCnt - 1) + "1");
+            range.Font.Bold = true; //粗体
+
+            // 设置单元格格式 - 某列
+            if (formatCols != null)
+            {
+                for (int i = 0; i < formatCols.GetLength(0); i++)
+                {
+                    range = worksheet.get_Range(formatCols[i, 0] + ":" + formatCols[i, 0]);     // 设置某列格式
+                    range.NumberFormat = formatCols[i, 1];
+                }
+            }
+
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(range);
+            range = null;
+
+            //设置禁止弹出保存和覆盖的询问提示框
+            appexcel.DisplayAlerts = false;
+            appexcel.AlertBeforeOverwriting = false;
+
+            //恢复文化环境
+            System.Threading.Thread.CurrentThread.CurrentCulture = currentCI;
+
+            try
+            {
+                //保存excel文件
+                //appexcel.Save(toSaveName); //自动创建一个新的Excel文档保存在“我的文档”里
+                workbook.Saved = true;
+                workbook.SaveCopyAs(toSaveName);//以复制的形式保存在已有的文档里
+            }
+            catch (Exception ex)
+            {
+                ShowMsg("导出Excel文件失败：" + ex.Message + "\r\n", Color.Red);
+            }
+            finally
+            {
+                //确保Excel进程关闭
+                appexcel.Quit();
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(appexcel);
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(worksheet);
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(workbook);
+                appexcel = null;
+            }
+
+        }
+
+        public void ExportToExcel(DataGridView dgv, string toSaveName, string[,] formatCols = null)
+        {
+
+            Microsoft.Office.Interop.Excel.Application appexcel = new Microsoft.Office.Interop.Excel.Application();
+            Microsoft.Office.Interop.Excel.Workbook workbook;
+            Microsoft.Office.Interop.Excel.Worksheet worksheet;
+            Microsoft.Office.Interop.Excel.Range range;
+            System.Reflection.Missing miss = System.Reflection.Missing.Value;
+
+            // 设置对象不可见
+            appexcel.Visible = false;
+
+            // 保存/切换当前环境
+            System.Globalization.CultureInfo currentCI = System.Threading.Thread.CurrentThread.CurrentCulture;
+            System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-us");
+
+            // 创建工作簿、工作表
+            workbook = appexcel.Workbooks.Add(miss);
+            worksheet = (Microsoft.Office.Interop.Excel.Worksheet)workbook.Worksheets.Add(miss);
+
+            // 给工作表赋名称
+            worksheet.Name = "saved";
+
+            int iRowCnt = dgv.Rows.Count;       // 总行数
+            int iColumnCnt = dgv.Columns.Count; // 总列数
+            int iParstedRows = 0, iCurrRows = 0, iBufferRowCnt = 1000;   //iBufferRowCnt为每次写行的数值，可以自己设置
+
+            // 表头
+            for (int i = 0; i < dgv.Columns.Count; i++)
+            {
+                worksheet.Cells[1, i + 1] = dgv.Columns[i].HeaderText;
+            }
+
+            // 表内容
+
+            //在内存中声明一个iBufferRowCnt×iColumnCnt的数组，iBufferRowCnt是每次最大存储的行数，iColumnCnt就是存储的实际列数
+            object[,] objval = new object[iBufferRowCnt, iColumnCnt];
+
+            iCurrRows = iBufferRowCnt;
+
+            while (iParstedRows < iRowCnt)
+            {
+                if ((iRowCnt - iParstedRows) < iBufferRowCnt)
+                    iCurrRows = iRowCnt - iParstedRows;
+
+                //用for循环给数组赋值
+                for (int i = 0; i < iCurrRows; i++)
+                {
+                    for (int j = 0; j < iColumnCnt; j++)
+                        objval[i, j] = dgv.Rows[i + iParstedRows].Cells[j].Value.ToString();
+                    System.Windows.Forms.Application.DoEvents();
+                }
+
+                string cellBegin = "A" + ((int)(iParstedRows + 2)).ToString();
+                string cellEnd = "";
+
+                if (iColumnCnt <= 26)
+                {
+                    cellEnd = ((char)('A' + iColumnCnt - 1)).ToString() + ((int)(iParstedRows + iCurrRows + 1)).ToString();
+                }
+                else
+                {
+                    cellEnd = ((char)('A' + (iColumnCnt / 26 - 1))).ToString() + ((char)('A' + (iColumnCnt % 26 - 1))).ToString() + ((int)(iParstedRows + iCurrRows + 1)).ToString();
+                }
+                range = worksheet.get_Range(cellBegin, cellEnd);
+
+                // 调用range的value2属性，把内存中的值赋给excel
+                range.Value2 = objval;
+
+                iParstedRows = iParstedRows + iCurrRows;
+            }
+
+            // 设置单元格格式 - 所有
+            range = worksheet.get_Range("A1", (char)('A' + iColumnCnt - 1) + (iRowCnt + 1).ToString());
+            range.HorizontalAlignment = Microsoft.Office.Interop.Excel.XlHAlign.xlHAlignCenter; //居中
+            //加边框
+            //range.BorderAround(Microsoft.Office.Interop.Excel.XlLineStyle.xlContinuous, Microsoft.Office.Interop.Excel.XlBorderWeight.xlThin, Microsoft.Office.Interop.Excel.XlColorIndex.xlColorIndexAutomatic, null);
+            range.EntireColumn.AutoFit();   //自动调整列宽
+            //range.EntireRow.AutoFit();      //自动调整行高
+
+            // 设置单元格格式 - 表头
+            range = worksheet.get_Range("A1", (char)('A' + iColumnCnt - 1) + "1");
+            range.Font.Bold = true; //粗体
+
+            // 设置单元格格式 - 某列
+            if (formatCols != null)
+            {
+                for (int i = 0; i < formatCols.GetLength(0); i++)
+                {
+                    range = worksheet.get_Range(formatCols[i, 0] + ":" + formatCols[i, 0]);     // 设置某列格式
+                    range.NumberFormat = formatCols[i, 1];
+                }
+            }
+
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(range);
+            range = null;
+
+            //设置禁止弹出保存和覆盖的询问提示框
+            appexcel.DisplayAlerts = false;
+            appexcel.AlertBeforeOverwriting = false;
+
+            //恢复文化环境
+            System.Threading.Thread.CurrentThread.CurrentCulture = currentCI;
+
+            try
+            {
+                //保存excel文件
+                //appexcel.Save(toSaveName); //自动创建一个新的Excel文档保存在“我的文档”里
+                workbook.Saved = true;
+                workbook.SaveCopyAs(toSaveName);//以复制的形式保存在已有的文档里
+            }
+            catch (Exception ex)
+            {
+                ShowMsg("导出Excel文件失败：" + ex.Message + "\r\n", Color.Red);
+            }
+            finally
+            {
+                //确保Excel进程关闭
+                appexcel.Quit();
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(appexcel);
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(worksheet);
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(workbook);
+                appexcel = null;
+            }
+
+        }
+        #endregion
+
         #region 导入日志文件
         private void btImport_Click(object sender, EventArgs e)
         {
@@ -625,12 +1017,13 @@ namespace BuBuJi_DataAnalysisTool
                 }
                 else
                 {
-                    // 数据、界面初始化
-                    DataInit();
+                    // 查询总数
+                    _recordCnt = Convert.ToInt32(_sqldb.ExecuteScalar("select count(*) from tblLog"));
+                    UpdateRecordCnt(_recordCnt);
                 }
 
                 timer.Stop();
-                ShowMsg("导入 " + cnt + " 条记录完成！ 用时 " +
+                ShowMsg("导入 " + cnt + " 条记录完成！ 当前记录总数 " + _recordCnt + " 用时 " +
                     timer.Elapsed.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
 
             }));
@@ -797,19 +1190,26 @@ namespace BuBuJi_DataAnalysisTool
 
                         // 选择文件位置
                         SaveFileDialog savefileDlg = new SaveFileDialog();
-                        savefileDlg.Filter = "*.xlsx(Excel文件)|*.xlsx|*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
-                        savefileDlg.DefaultExt = ".xlsx";
+                        savefileDlg.Filter = "*.xls(Excel文件)|*.xls|*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
+                        savefileDlg.DefaultExt = ".xls";
                         savefileDlg.FileName = "XX查询结果-第" + _currPage + "页";
 
                         if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
                         // 导出
-                        if (savefileDlg.FileName.Contains("xlsx"))
-                            ExportToExcel(dgvLog, savefileDlg.FileName);
-                        else
-                            ExportToFile(dgvLog, savefileDlg.FileName);
+                        ShowMsg("导出中。。。\r\n", Color.Green, false, true);
 
-                        ShowMsg("导出 当前结果-第" + _currPage + "页 完成！\r\n", Color.Green, false);
+                        if (savefileDlg.FileName.Contains("xls"))
+                        {
+                            string[,] formatCols = new string[,] { { "A", "00" }, { "D", "00" }, { "G", "yyyy-MM-dd HH:mm:ss" } };
+                            ExportToExcel(dgvLog, savefileDlg.FileName, formatCols);
+                        }
+                        else
+                        {
+                            ExportToFile(dgvLog, savefileDlg.FileName);
+                        }
+
+                        ShowMsg("导出[当前结果-第" + _currPage + "页]完成！\r\n", Color.Green, false);
                     }
                     break;
 
@@ -852,9 +1252,19 @@ namespace BuBuJi_DataAnalysisTool
                         if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
                         // 导出
-                        ExportToFile(tb, savefileDlg.FileName);
+                        ShowMsg("导出中。。。\r\n", Color.Green, false, true);
 
-                        ShowMsg("导出 当前结果-所有记录 完成！\r\n", Color.Green, false);
+                        if (savefileDlg.FileName.Contains("xls"))
+                        {
+                            string[,] formatCols = new string[,] { { "A", "00" }, { "D", "00" }, { "G", "yyyy-MM-dd HH:mm:ss" } };
+                            ExportToExcel(tb, savefileDlg.FileName, formatCols);
+                        }
+                        else
+                        {
+                            ExportToFile(tb, savefileDlg.FileName);
+                        }
+
+                        ShowMsg("导出[当前结果-所有记录]完成！\r\n", Color.Green, false);
                     }
                     break;
 
@@ -986,7 +1396,7 @@ namespace BuBuJi_DataAnalysisTool
             DateTime date = DateTime.Now;
             DataRow[] selRows;
             int stepStat, stepStatLast;
-            int tmpCnt, stepErrCnt, dayUnRptCnt;
+            int tmpCnt, dayStepErrCnt, dayUnRptCnt;
             long cnt;
             StringBuilder strBuilder = new StringBuilder();
             DataTable tbZeroStep_Devs = null, tbAllRpt_Devs = null;
@@ -998,6 +1408,12 @@ namespace BuBuJi_DataAnalysisTool
 
             // 读出档案列表
             ReadDocInfo();
+
+            if (tbDoc.Rows.Count == 0)
+            {
+                ShowMsg("如果要统计每个设备每天上报和步数情况，请先导入档案！\r\n", Color.Red);
+                return;
+            }
 
             // 查询步数为0设备ID
             sqlText = "select distinct deviceId from tblLog "
@@ -1070,10 +1486,15 @@ namespace BuBuJi_DataAnalysisTool
             for (int i = 2; i < 5 + 2 && dgvDoc.Columns[i].Visible; i++)
             {
                 dayUnRptCnt = tbDoc.Select(tbDoc.Columns[i].ColumnName + " = 0").Length;
-                strBuilder.AppendLine(dgvDoc.Columns[i].HeaderText + "  " + dayUnRptCnt.ToString().PadRight(13));
+                dayStepErrCnt = Convert.ToInt32(_sqldb.ExecuteScalar("select count(*) from tblLog" 
+                    + " where isRepeatRpt = 0 and stepSum = 0 and date = '" + dgvDoc.Columns[i].HeaderText 
+                    + "' group by deviceId"));
+                strBuilder.AppendLine(dgvDoc.Columns[i].HeaderText + "  " 
+                    + dayUnRptCnt.ToString().PadRight(13)
+                    + dayStepErrCnt.ToString().PadRight(13));
             }
             UpdateCurrDocCnt(tbDoc.Rows.Count, tmpCnt);
-            ShowMsg("\r\n日期        未上报设备数 步数异常设备数\r\n" + strBuilder.ToString(), Color.Red, false);
+            ShowMsg("\r\n日期        未上报设备数 步数为0设备数\r\n" + strBuilder.ToString(), Color.Red, false);
 
             // 统计-不在档案中的设备
             tmpCnt = 0;
@@ -1118,347 +1539,6 @@ namespace BuBuJi_DataAnalysisTool
         }
         #endregion
 
-        #region 数据表/数据视图-导出
-        private void ExportToFile(DataTable tb, string toSaveName)
-        {
-            FileStream fstream = File.Open(toSaveName, FileMode.Create, FileAccess.Write);
-            StreamWriter writer = new StreamWriter(fstream);
-            StringBuilder strBuilder = new StringBuilder(1024);
-
-            int dateIdx = 0xFF;
-
-            // 表头
-            if (tb.Rows.Count > 0)
-            {
-                strBuilder.Clear();
-
-                strBuilder.Append("序号" + "  ");
-                for (int i = 0; i < tb.Columns.Count; i++)
-                {
-                    if(tb.Columns[i].ColumnName == "日期") dateIdx = i;
-                    strBuilder.Append(tb.Columns[i].ColumnName + "  ");
-                }
-                strBuilder.Remove(strBuilder.Length - 2, 2);
-
-                writer.WriteLine(strBuilder.ToString());
-                writer.Flush();
-            }
-
-            // 表行记录
-            for(int k = 0; k < tb.Rows.Count; k++)
-            {
-                strBuilder.Clear();
-
-                strBuilder.Append(k + 1 + "  ");
-                for (int i = 0; i < tb.Columns.Count; i++)
-                {
-                    strBuilder.Append((i == dateIdx ? ((DateTime)tb.Rows[k][i]).ToString("yyyy-MM-dd") : tb.Rows[k][i]) + "  ");
-                }
-                strBuilder.Remove(strBuilder.Length - 2, 2);
-
-                writer.WriteLine(strBuilder.ToString());
-            }
-            writer.Flush();
-            writer.Close();
-        }
-
-        private void ExportToFile(DataGridView dgv, string toSaveName)
-        {
-            FileStream fstream = File.Open(toSaveName, FileMode.Create, FileAccess.Write);
-            StreamWriter writer = new StreamWriter(fstream);
-            StringBuilder strBuilder = new StringBuilder(1024);
-
-            int dateIdx = 0xFF;
-
-            // 表头
-            if (dgv.Rows.Count > 0)
-            {
-                strBuilder.Clear();
-
-                strBuilder.Append("序号" + "  ");
-                for (int i = 0; i < dgv.Columns.Count; i++)
-                {
-                    if (dgv.Columns[i].HeaderText == "日期") dateIdx = i;
-                    strBuilder.Append(dgv.Columns[i].HeaderText + "  ");
-                }
-                strBuilder.Remove(strBuilder.Length - 2, 2);
-
-                writer.WriteLine(strBuilder.ToString());
-                writer.Flush();
-            }
-
-            // 表行记录
-            foreach (DataGridViewRow dr in dgv.Rows)
-            {
-                strBuilder.Clear();
-
-                strBuilder.Append(dr.Index + 1 + "  ");
-                for (int i = 0; i < dgv.Columns.Count; i++)
-                {
-                    strBuilder.Append((i == dateIdx ? ((DateTime)dr.Cells[i].Value).ToString("yyyy-MM-dd") :
-                        dr.Cells[i].Value) + "  ");
-                }
-                strBuilder.Remove(strBuilder.Length - 2, 2);
-
-                writer.WriteLine(strBuilder.ToString());
-            }
-            writer.Flush();
-            writer.Close();
-        }
-
-        public DataTable ExcelToDataTable(string dataSource, string tblName)
-        {
-            DataTable tb = new DataTable();
-            string strConn = string.Empty;
-            string extension = Path.GetExtension(dataSource);
-
-            if (File.Exists(dataSource) == false) return tb;
-
-            if (extension == ".xls")
-                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";Extended Properties='Excel 8.0;HDR=YES;IMEX=1'";
-            else if (extension == ".xlsx")
-                strConn = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" + dataSource + ";Extended Properties='Excel 12.0;HDR=YES;IMEX=1'";
-            else
-                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";";
-
-            OleDbConnection conn = new OleDbConnection(strConn);
-            conn.Open();
-
-            string strSql = "select * from " + tblName;
-
-            OleDbDataAdapter oda = new OleDbDataAdapter(strSql, strConn);
-            oda.Fill(tb);
-            conn.Close();
-
-            return tb;
-        }
-        public void DataTableToExcel(string dataSource, string tblName, DataTable srcTable)
-        {
-            string strConn = string.Empty;
-            string extension = Path.GetExtension(dataSource);
-
-            if (File.Exists(dataSource) == false) throw new Exception("数据源不存在");
-
-            if (extension == ".xls")
-                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";Extended Properties='Excel 8.0;HDR=YES;IMEX=1'";
-            else if (extension == ".xlsx")
-                strConn = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" + dataSource + ";Extended Properties='Excel 12.0;HDR=YES;IMEX=1'";
-            else
-                strConn = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dataSource + ";";
-
-            OleDbConnection conn = new OleDbConnection(strConn);
-            conn.Open();
-            OleDbTransaction trans = conn.BeginTransaction();
-            
-
-            
-            trans.Commit();
-            conn.Close();
-
-        }
-        public void ExportToExcel(DataTable dt, string toSaveName)
-        {
-            Microsoft.Office.Interop.Excel.Application appexcel = new Microsoft.Office.Interop.Excel.Application();
-            Microsoft.Office.Interop.Excel.Workbook workbookdata;
-            Microsoft.Office.Interop.Excel.Worksheet worksheetdata;
-            Microsoft.Office.Interop.Excel.Range rangedata;
-            System.Reflection.Missing miss = System.Reflection.Missing.Value;
-
-            // 设置对象不可见
-            appexcel.Visible = false;
-
-            //System.Globalization.CultureInfo currentci = System.Threading.Thread.CurrentThread.CurrentCulture;
-            //System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-us");
-            workbookdata = appexcel.Workbooks.Add(miss);
-            worksheetdata = (Microsoft.Office.Interop.Excel.Worksheet)workbookdata.Worksheets.Add(miss, miss, miss, miss);
-
-            // 给工作表赋名称
-            worksheetdata.Name = "saved";
-
-            // 表头
-            for (int i = 0; i < dt.Columns.Count; i++)
-            {
-                worksheetdata.Cells[1, i + 1] = dt.Columns[i].ColumnName.ToString();
-            }
-
-            //因为第一行已经写了表头，所以所有数据都应该从a2开始
-            rangedata = worksheetdata.get_Range("a2", miss);
-
-            //使用range块对excel单元格赋值
-            Microsoft.Office.Interop.Excel.Range xlrang = null;
-
-            //irowcount为实际行数，最大行
-            int irowcount = dt.Rows.Count;
-            int iparstedrow = 0, icurrsize = 0;
-
-            //ieachsize为每次写行的数值，可以自己设置
-            int ieachsize = 1000;
-
-            //icolumnaccount为实际列数，最大列数
-            int icolumnaccount = dt.Columns.Count;
-
-            //在内存中声明一个ieachsize×icolumnaccount的数组，ieachsize是每次最大存储的行数，icolumnaccount就是存储的实际列数
-            object[,] objval = new object[ieachsize, icolumnaccount];
-
-            icurrsize = ieachsize;
-
-            while (iparstedrow < irowcount)
-            {
-                if ((irowcount - iparstedrow) < ieachsize)
-                    icurrsize = irowcount - iparstedrow;
-
-                //用for循环给数组赋值
-                for (int i = 0; i < icurrsize; i++)
-                {
-                    for (int j = 0; j < icolumnaccount; j++)
-                        objval[i, j] = dt.Rows[i + iparstedrow][j].ToString();
-                    System.Windows.Forms.Application.DoEvents();
-                }
-
-                string cellBegin = "A" + ((int)(iparstedrow + 2)).ToString();
-                string cellEnd = "";
-
-                if (icolumnaccount <= 26)
-                {
-                    cellEnd = ((char)('A' + icolumnaccount - 1)).ToString() + ((int)(iparstedrow + icurrsize + 1)).ToString();
-                }
-                else
-                {
-                    cellEnd = ((char)('A' + (icolumnaccount / 26 - 1))).ToString() + ((char)('A' + (icolumnaccount % 26 - 1))).ToString() + ((int)(iparstedrow + icurrsize + 1)).ToString();
-                }
-                xlrang = worksheetdata.get_Range(cellBegin, cellEnd);
-
-                // 调用range的value2属性，把内存中的值赋给excel
-                xlrang.Value2 = objval;
-
-                iparstedrow = iparstedrow + icurrsize;
-            }
-
-            //保存工作表
-            System.Runtime.InteropServices.Marshal.ReleaseComObject(xlrang);
-            xlrang = null;
-
-            //调用方法关闭excel进程
-            appexcel.Visible = true;
-
-            //设置禁止弹出保存和覆盖的询问提示框
-            appexcel.DisplayAlerts = false;
-            appexcel.AlertBeforeOverwriting = false;
-
-            //保存工作簿
-            appexcel.Application.Workbooks.Add(true).Save();
-
-            //保存excel文件
-            appexcel.Save(toSaveName);
-
-            //确保Excel进程关闭
-            appexcel.Quit();    //可以直接打开文件
-            appexcel = null;
-
-        }
-
-        public void ExportToExcel(DataGridView dgv, string toSaveName)
-        {
-            Microsoft.Office.Interop.Excel.Application appexcel = new Microsoft.Office.Interop.Excel.Application();
-            Microsoft.Office.Interop.Excel.Workbook workbookdata;
-            Microsoft.Office.Interop.Excel.Worksheet worksheetdata;
-            Microsoft.Office.Interop.Excel.Range rangedata;
-            System.Reflection.Missing miss = System.Reflection.Missing.Value;
-
-            // 设置对象不可见
-            appexcel.Visible = false;
-
-            //System.Globalization.CultureInfo currentci = System.Threading.Thread.CurrentThread.CurrentCulture;
-            //System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-us");
-            workbookdata = appexcel.Workbooks.Add(miss);
-            worksheetdata = (Microsoft.Office.Interop.Excel.Worksheet)workbookdata.Worksheets.Add(miss, miss, miss, miss);
-
-            // 给工作表赋名称
-            worksheetdata.Name = "saved";
-
-            // 表头
-            for (int i = 0; i < dgv.Columns.Count; i++)
-            {
-                worksheetdata.Cells[1, i + 1] = dgv.Columns[i].HeaderText;
-            }
-
-            //因为第一行已经写了表头，所以所有数据都应该从a2开始
-            rangedata = worksheetdata.get_Range("a2", miss);
-
-            //使用range块对excel单元格赋值
-            Microsoft.Office.Interop.Excel.Range xlrang = null;
-
-            //irowcount为实际行数，最大行
-            int irowcount = dgv.Rows.Count;
-            int iparstedrow = 0, icurrsize = 0;
-
-            //ieachsize为每次写行的数值，可以自己设置
-            int ieachsize = 1000;
-
-            //icolumnaccount为实际列数，最大列数
-            int icolumnaccount = dgv.Columns.Count;
-
-            //在内存中声明一个ieachsize×icolumnaccount的数组，ieachsize是每次最大存储的行数，icolumnaccount就是存储的实际列数
-            object[,] objval = new object[ieachsize, icolumnaccount];
-
-            icurrsize = ieachsize;
-
-            while (iparstedrow < irowcount)
-            {
-                if ((irowcount - iparstedrow) < ieachsize)
-                    icurrsize = irowcount - iparstedrow;
-
-                //用for循环给数组赋值
-                for (int i = 0; i < icurrsize; i++)
-                {
-                    for (int j = 0; j < icolumnaccount; j++)
-                        objval[i, j] = dgv.Rows[i + iparstedrow].Cells[j].Value.ToString();
-                    System.Windows.Forms.Application.DoEvents();
-                }
-
-                string cellBegin = "A" + ((int)(iparstedrow + 2)).ToString();
-                string cellEnd = "";
-
-                if (icolumnaccount <= 26)
-                {
-                    cellEnd = ((char)('A' + icolumnaccount - 1)).ToString() + ((int)(iparstedrow + icurrsize + 1)).ToString();
-                }
-                else
-                {
-                    cellEnd = ((char)('A' + (icolumnaccount / 26 - 1))).ToString() + ((char)('A' + (icolumnaccount % 26 - 1))).ToString() + ((int)(iparstedrow + icurrsize + 1)).ToString();
-                }
-                xlrang = worksheetdata.get_Range(cellBegin, cellEnd);
-
-                // 调用range的value2属性，把内存中的值赋给excel
-                xlrang.Value2 = objval;
-
-                iparstedrow = iparstedrow + icurrsize;
-            }
-
-            //保存工作表
-            System.Runtime.InteropServices.Marshal.ReleaseComObject(xlrang);
-            xlrang = null;
-
-            //调用方法关闭excel进程
-            appexcel.Visible = true;
-
-            //设置禁止弹出保存和覆盖的询问提示框
-            appexcel.DisplayAlerts = false;
-            appexcel.AlertBeforeOverwriting = false;
-
-            //保存工作簿
-            //workbookdata.Save();
-
-            //保存excel文件
-            //appexcel.Save(toSaveName);
-
-            //确保Excel进程关闭
-            //appexcel.Quit();    //可以直接打开文件
-            //appexcel = null;
-
-        }
-        #endregion
-
         #region 导出-日期列表/基站列表/设备列表
         private void devices导出列表ToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -1466,26 +1546,33 @@ namespace BuBuJi_DataAnalysisTool
 
             // 选择文件位置
             SaveFileDialog savefileDlg = new SaveFileDialog();
-            savefileDlg.Filter = "*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
-            savefileDlg.DefaultExt = ".txt";
+            savefileDlg.Filter = "*.xls(Excel文件)|*.xls|*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
+            savefileDlg.DefaultExt = ".xls";
             savefileDlg.InitialDirectory = Path.GetDirectoryName(Application.ExecutablePath) + "\\data";
-            savefileDlg.FileName = "设备列表";
+            savefileDlg.FileName = "上报的设备";
 
             if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
             // 导出
-            ExportToFile(dgvDevice, savefileDlg.FileName);
+            ShowMsg("导出中。。。\r\n", Color.Green, false, true);
 
-            ShowMsg("导出设备列表成功！\r\n", Color.Green, false);
+            if (savefileDlg.FileName.Contains("xls"))
+            {
+                string[,] formatCols = new string[,] { { "A", "00" } };
+                ExportToExcel(dgvDevice, savefileDlg.FileName, formatCols);
+            }
+            else
+            {
+                ExportToFile(dgvDevice, savefileDlg.FileName);
+            }
+
+            ShowMsg("导出[上报的设备]完成！\r\n", Color.Green, false);
         }
 
         private void devices统计设备数上报次数ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string sqlText = "Select deviceId, count(t.deviceId) as reportCnt " +
-                " From ( select deviceId, frameSn from tblLog group by deviceId, frameSn, date, stepSum ) as t" +
-                " group by deviceId"; // deviceid -- count
-            sqlText = "Select reportCnt, count(tt.reportCnt) as devCnt" +
-                " From ( " + sqlText + " ) as tt" +
+            string sqlText = "Select reportCnt, count(tt.reportCnt) as devCnt" +
+                " From ( select deviceId, count(*) as reportCnt from tblLog where isRepeatRpt = 0 group by deviceId) as tt" +
                 " group by reportCnt"; // reportCnt -- devCnt
 
             DataTable tb = _sqldb.ExecuteReaderToDataTable(sqlText);
@@ -1508,17 +1595,27 @@ namespace BuBuJi_DataAnalysisTool
 
             // 选择文件位置
             SaveFileDialog savefileDlg = new SaveFileDialog();
-            savefileDlg.Filter = "*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
-            savefileDlg.DefaultExt = ".txt";
+            savefileDlg.Filter = "*.xls(Excel文件)|*.xls|*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
+            savefileDlg.DefaultExt = ".xls";
             savefileDlg.InitialDirectory = Path.GetDirectoryName(Application.ExecutablePath) + "\\data";
-            savefileDlg.FileName = "基站列表";
+            savefileDlg.FileName = "接收的基站";
 
             if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
             // 导出
-            ExportToFile(dgvStation, savefileDlg.FileName);
+            ShowMsg("导出中。。。\r\n", Color.Green, false, true);
 
-            ShowMsg("导出基站列表成功！\r\n", Color.Green, false);
+            if (savefileDlg.FileName.Contains("xls"))
+            {
+                string[,] formatCols = new string[,] { { "A", "00" } };
+                ExportToExcel(dgvStation, savefileDlg.FileName, formatCols);
+            }
+            else
+            {
+                ExportToFile(dgvStation, savefileDlg.FileName);
+            }
+
+            ShowMsg("导出[接收的基站]完成！\r\n", Color.Green, false);
         }
 
         private void dates导出列表ToolStripMenuItem2_Click(object sender, EventArgs e)
@@ -1527,17 +1624,27 @@ namespace BuBuJi_DataAnalysisTool
 
             // 选择文件位置
             SaveFileDialog savefileDlg = new SaveFileDialog();
-            savefileDlg.Filter = "*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
-            savefileDlg.DefaultExt = ".txt";
+            savefileDlg.Filter = "*.xls(Excel文件)|*.xls|*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
+            savefileDlg.DefaultExt = ".xls";
             savefileDlg.InitialDirectory = Path.GetDirectoryName(Application.ExecutablePath) + "\\data";
-            savefileDlg.FileName = "日期列表";
+            savefileDlg.FileName = "记录的天数";
 
             if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
             // 导出
-            ExportToFile(dgvDate, savefileDlg.FileName);
+            ShowMsg("导出中。。。\r\n", Color.Green, false, true);
 
-            ShowMsg("导出日期列表成功！\r\n", Color.Green, false);
+            if (savefileDlg.FileName.Contains("xls"))
+            {
+                string[,] formatCols = new string[,] { { "A", "yyyy-MM-dd" } };
+                ExportToExcel(dgvDate, savefileDlg.FileName, formatCols);
+            }
+            else
+            {
+                ExportToFile(dgvDate, savefileDlg.FileName);
+            }
+
+            ShowMsg("导出[记录的天数]完成！\r\n", Color.Green, false);
         }
         private void dates删除记录ToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -1914,16 +2021,36 @@ namespace BuBuJi_DataAnalysisTool
 
                         // 选择文件位置
                         SaveFileDialog savefileDlg = new SaveFileDialog();
-                        savefileDlg.Filter = "*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
-                        savefileDlg.DefaultExt = ".txt";
+                        savefileDlg.Filter = "*.xls(Excel文件)|*.xls|*.txt(文本文件)|*.txt|*.*(所有文件)|*.*";
+                        savefileDlg.DefaultExt = ".xls";
                         savefileDlg.FileName = "设备档案信息";
 
                         if (DialogResult.OK != savefileDlg.ShowDialog() || savefileDlg.FileName == "") return;
 
-                        // 导出
-                        ExportToFile(dgvDoc, savefileDlg.FileName);
+                        // 把可见的列拷贝出来
+                        DataGridView dgvVisible = new DataGridView();
+                        foreach(DataGridViewColumn col in dgvDoc.Columns)
+                        {
+                            if(col.Visible)
+                            {
+                                dgvVisible.Columns.Add((DataGridViewColumn)col.Clone());
+                            }
+                        }
 
-                        ShowMsg("导出档案信息完成！\r\n", Color.Green, false);
+                        // 导出
+                        ShowMsg("导出中。。。\r\n", Color.Green, false, true);
+
+                        if (savefileDlg.FileName.Contains("xls"))
+                        {
+                            string[,] formatCols = new string[,] { { "A", "00" } };
+                            ExportToExcel(dgvVisible, savefileDlg.FileName, formatCols);
+                        }
+                        else
+                        {
+                            ExportToFile(dgvVisible, savefileDlg.FileName);
+                        }
+
+                        ShowMsg("导出[设备档案信息]完成！\r\n", Color.Green, false);
                     }
                     break;
 
@@ -1941,6 +2068,6 @@ namespace BuBuJi_DataAnalysisTool
             }
         }
 
-    #endregion
+        #endregion
     }
 }
