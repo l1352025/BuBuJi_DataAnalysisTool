@@ -117,6 +117,7 @@
             this.dataGridViewTextBoxColumn3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.cMenuDates = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.dates导出列表ToolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
+            this.dates删除记录ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.updownPagesize = new System.Windows.Forms.NumericUpDown();
             this.txtSteps = new System.Windows.Forms.TextBox();
@@ -137,7 +138,7 @@
             this.chkStatus = new System.Windows.Forms.CheckBox();
             this.label1 = new System.Windows.Forms.Label();
             this.chkVoltage = new System.Windows.Forms.CheckBox();
-            this.btQueryCountInfo = new System.Windows.Forms.Button();
+            this.btCountMainInfo = new System.Windows.Forms.Button();
             this.chkDeviceId = new System.Windows.Forms.CheckBox();
             this.chkDate = new System.Windows.Forms.CheckBox();
             this.lbRecordCnt = new System.Windows.Forms.Label();
@@ -151,9 +152,12 @@
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.rbtRptCnt = new System.Windows.Forms.RadioButton();
+            this.rbtVbatMax = new System.Windows.Forms.RadioButton();
+            this.rbtVbatMin = new System.Windows.Forms.RadioButton();
             this.btClearDocView = new System.Windows.Forms.Button();
             this.lbCurrDocCnt = new System.Windows.Forms.Label();
-            this.btDocDelete = new System.Windows.Forms.Button();
+            this.btCountDocInfo = new System.Windows.Forms.Button();
             this.btDocImport = new System.Windows.Forms.Button();
             this.dgvDoc = new System.Windows.Forms.DataGridView();
             this.设备IDDataGridViewTextBoxColumn2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -167,7 +171,8 @@
             this.cMenuDocs = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.导出列表ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.选择当前行设备IDToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
-            this.dates删除记录ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.导入档案ToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.删除档案ToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.dgvLog)).BeginInit();
             this.cMenuLogs.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dsLog)).BeginInit();
@@ -514,36 +519,37 @@
             // tblDoc_AllRptCnt
             // 
             this.tblDoc_AllRptCnt.ColumnName = "总上报次数";
-            this.tblDoc_AllRptCnt.DataType = typeof(int);
+            this.tblDoc_AllRptCnt.DataType = typeof(object);
             // 
             // tblDoc_RptDay1
             // 
             this.tblDoc_RptDay1.ColumnName = "第1天上报";
-            this.tblDoc_RptDay1.DataType = typeof(int);
+            this.tblDoc_RptDay1.DataType = typeof(object);
             // 
             // tblDoc_RptDay2
             // 
             this.tblDoc_RptDay2.ColumnName = "第2天上报";
-            this.tblDoc_RptDay2.DataType = typeof(int);
+            this.tblDoc_RptDay2.DataType = typeof(object);
             // 
             // tblDoc_RptDay3
             // 
             this.tblDoc_RptDay3.ColumnName = "第3天上报";
-            this.tblDoc_RptDay3.DataType = typeof(int);
+            this.tblDoc_RptDay3.DataType = typeof(object);
             // 
             // tblDoc_Day4
             // 
             this.tblDoc_Day4.ColumnName = "第4天上报";
-            this.tblDoc_Day4.DataType = typeof(int);
+            this.tblDoc_Day4.DataType = typeof(object);
             // 
             // tblDoc_Day5
             // 
             this.tblDoc_Day5.ColumnName = "第5天上报";
-            this.tblDoc_Day5.DataType = typeof(int);
+            this.tblDoc_Day5.DataType = typeof(object);
             // 
             // tblDoc_StepStatus
             // 
             this.tblDoc_StepStatus.ColumnName = "步数状态";
+            this.tblDoc_StepStatus.DataType = typeof(object);
             // 
             // btImport
             // 
@@ -824,6 +830,13 @@
             this.dates导出列表ToolStripMenuItem2.Text = "导出列表";
             this.dates导出列表ToolStripMenuItem2.Click += new System.EventHandler(this.dates导出列表ToolStripMenuItem2_Click);
             // 
+            // dates删除记录ToolStripMenuItem
+            // 
+            this.dates删除记录ToolStripMenuItem.Name = "dates删除记录ToolStripMenuItem";
+            this.dates删除记录ToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.dates删除记录ToolStripMenuItem.Text = "删除记录";
+            this.dates删除记录ToolStripMenuItem.Click += new System.EventHandler(this.dates删除记录ToolStripMenuItem_Click);
+            // 
             // groupBox3
             // 
             this.groupBox3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -848,7 +861,7 @@
             this.groupBox3.Controls.Add(this.chkStatus);
             this.groupBox3.Controls.Add(this.label1);
             this.groupBox3.Controls.Add(this.chkVoltage);
-            this.groupBox3.Controls.Add(this.btQueryCountInfo);
+            this.groupBox3.Controls.Add(this.btCountMainInfo);
             this.groupBox3.Controls.Add(this.chkDeviceId);
             this.groupBox3.Controls.Add(this.chkDate);
             this.groupBox3.Controls.Add(this.lbRecordCnt);
@@ -1072,15 +1085,15 @@
             this.chkVoltage.Text = "电压";
             this.chkVoltage.UseVisualStyleBackColor = true;
             // 
-            // btQueryCountInfo
+            // btCountMainInfo
             // 
-            this.btQueryCountInfo.Location = new System.Drawing.Point(148, 14);
-            this.btQueryCountInfo.Name = "btQueryCountInfo";
-            this.btQueryCountInfo.Size = new System.Drawing.Size(98, 22);
-            this.btQueryCountInfo.TabIndex = 1;
-            this.btQueryCountInfo.Text = "统计";
-            this.btQueryCountInfo.UseVisualStyleBackColor = true;
-            this.btQueryCountInfo.Click += new System.EventHandler(this.btQueryCountInfo_Click);
+            this.btCountMainInfo.Location = new System.Drawing.Point(148, 14);
+            this.btCountMainInfo.Name = "btCountMainInfo";
+            this.btCountMainInfo.Size = new System.Drawing.Size(98, 22);
+            this.btCountMainInfo.TabIndex = 1;
+            this.btCountMainInfo.Text = "统计概要信息";
+            this.btCountMainInfo.UseVisualStyleBackColor = true;
+            this.btCountMainInfo.Click += new System.EventHandler(this.btQueryCountInfo_Click);
             // 
             // chkDeviceId
             // 
@@ -1228,9 +1241,12 @@
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.rbtRptCnt);
+            this.tabPage2.Controls.Add(this.rbtVbatMax);
+            this.tabPage2.Controls.Add(this.rbtVbatMin);
             this.tabPage2.Controls.Add(this.btClearDocView);
             this.tabPage2.Controls.Add(this.lbCurrDocCnt);
-            this.tabPage2.Controls.Add(this.btDocDelete);
+            this.tabPage2.Controls.Add(this.btCountDocInfo);
             this.tabPage2.Controls.Add(this.btDocImport);
             this.tabPage2.Controls.Add(this.dgvDoc);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
@@ -1241,12 +1257,44 @@
             this.tabPage2.Text = "设备档案信息";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // rbtRptCnt
+            // 
+            this.rbtRptCnt.AutoSize = true;
+            this.rbtRptCnt.Location = new System.Drawing.Point(447, 386);
+            this.rbtRptCnt.Name = "rbtRptCnt";
+            this.rbtRptCnt.Size = new System.Drawing.Size(71, 16);
+            this.rbtRptCnt.TabIndex = 6;
+            this.rbtRptCnt.Text = "上报次数";
+            this.rbtRptCnt.UseVisualStyleBackColor = true;
+            // 
+            // rbtVbatMax
+            // 
+            this.rbtVbatMax.AutoSize = true;
+            this.rbtVbatMax.Location = new System.Drawing.Point(374, 386);
+            this.rbtVbatMax.Name = "rbtVbatMax";
+            this.rbtVbatMax.Size = new System.Drawing.Size(71, 16);
+            this.rbtVbatMax.TabIndex = 6;
+            this.rbtVbatMax.Text = "最高电压";
+            this.rbtVbatMax.UseVisualStyleBackColor = true;
+            // 
+            // rbtVbatMin
+            // 
+            this.rbtVbatMin.AutoSize = true;
+            this.rbtVbatMin.Checked = true;
+            this.rbtVbatMin.Location = new System.Drawing.Point(301, 385);
+            this.rbtVbatMin.Name = "rbtVbatMin";
+            this.rbtVbatMin.Size = new System.Drawing.Size(71, 16);
+            this.rbtVbatMin.TabIndex = 6;
+            this.rbtVbatMin.TabStop = true;
+            this.rbtVbatMin.Text = "最低电压";
+            this.rbtVbatMin.UseVisualStyleBackColor = true;
+            // 
             // btClearDocView
             // 
             this.btClearDocView.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.btClearDocView.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.btClearDocView.Font = new System.Drawing.Font("宋体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btClearDocView.Location = new System.Drawing.Point(433, 382);
+            this.btClearDocView.Location = new System.Drawing.Point(606, 383);
             this.btClearDocView.Name = "btClearDocView";
             this.btClearDocView.Size = new System.Drawing.Size(93, 24);
             this.btClearDocView.TabIndex = 5;
@@ -1264,23 +1312,23 @@
             this.lbCurrDocCnt.TabIndex = 4;
             this.lbCurrDocCnt.Text = "当前档案： ** 个  未上报 ** 个";
             // 
-            // btDocDelete
+            // btCountDocInfo
             // 
-            this.btDocDelete.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btDocDelete.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            this.btDocDelete.Location = new System.Drawing.Point(339, 382);
-            this.btDocDelete.Name = "btDocDelete";
-            this.btDocDelete.Size = new System.Drawing.Size(69, 24);
-            this.btDocDelete.TabIndex = 1;
-            this.btDocDelete.Text = "删除档案";
-            this.btDocDelete.UseVisualStyleBackColor = false;
-            this.btDocDelete.Click += new System.EventHandler(this.btDocDelete_Click);
+            this.btCountDocInfo.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btCountDocInfo.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.btCountDocInfo.Location = new System.Drawing.Point(524, 383);
+            this.btCountDocInfo.Name = "btCountDocInfo";
+            this.btCountDocInfo.Size = new System.Drawing.Size(67, 24);
+            this.btCountDocInfo.TabIndex = 1;
+            this.btCountDocInfo.Text = "统计";
+            this.btCountDocInfo.UseVisualStyleBackColor = false;
+            this.btCountDocInfo.Click += new System.EventHandler(this.btCountDocInfo_Click);
             // 
             // btDocImport
             // 
             this.btDocImport.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.btDocImport.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            this.btDocImport.Location = new System.Drawing.Point(226, 382);
+            this.btDocImport.Location = new System.Drawing.Point(216, 382);
             this.btDocImport.Name = "btDocImport";
             this.btDocImport.Size = new System.Drawing.Size(70, 24);
             this.btDocImport.TabIndex = 1;
@@ -1407,9 +1455,11 @@
             // 
             this.cMenuDocs.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.导出列表ToolStripMenuItem,
-            this.选择当前行设备IDToolStripMenuItem1});
+            this.选择当前行设备IDToolStripMenuItem1,
+            this.导入档案ToolStripMenuItem1,
+            this.删除档案ToolStripMenuItem1});
             this.cMenuDocs.Name = "cMenuDocs";
-            this.cMenuDocs.Size = new System.Drawing.Size(179, 48);
+            this.cMenuDocs.Size = new System.Drawing.Size(179, 92);
             this.cMenuDocs.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.cMenuDocs_ItemClicked);
             // 
             // 导出列表ToolStripMenuItem
@@ -1424,12 +1474,17 @@
             this.选择当前行设备IDToolStripMenuItem1.Size = new System.Drawing.Size(178, 22);
             this.选择当前行设备IDToolStripMenuItem1.Text = "选择当前行-设备ID";
             // 
-            // dates删除记录ToolStripMenuItem
+            // 导入档案ToolStripMenuItem1
             // 
-            this.dates删除记录ToolStripMenuItem.Name = "dates删除记录ToolStripMenuItem";
-            this.dates删除记录ToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
-            this.dates删除记录ToolStripMenuItem.Text = "删除记录";
-            this.dates删除记录ToolStripMenuItem.Click += new System.EventHandler(this.dates删除记录ToolStripMenuItem_Click);
+            this.导入档案ToolStripMenuItem1.Name = "导入档案ToolStripMenuItem1";
+            this.导入档案ToolStripMenuItem1.Size = new System.Drawing.Size(178, 22);
+            this.导入档案ToolStripMenuItem1.Text = "导入档案";
+            // 
+            // 删除档案ToolStripMenuItem1
+            // 
+            this.删除档案ToolStripMenuItem1.Name = "删除档案ToolStripMenuItem1";
+            this.删除档案ToolStripMenuItem1.Size = new System.Drawing.Size(178, 22);
+            this.删除档案ToolStripMenuItem1.Text = "删除档案";
             // 
             // FormMain
             // 
@@ -1528,7 +1583,7 @@
         private System.Windows.Forms.TextBox txtVolt;
         private System.Windows.Forms.ComboBox cbxSteps;
         private System.Windows.Forms.ComboBox cbxVolt;
-        private System.Windows.Forms.Button btQueryCountInfo;
+        private System.Windows.Forms.Button btCountMainInfo;
         private System.Windows.Forms.CheckBox chkRmSameReport;
         private System.Data.DataColumn 上报次数;
         private System.Data.DataColumn 设备个数;
@@ -1574,7 +1629,6 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn 基站IDDataGridViewTextBoxColumn1;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
         private System.Windows.Forms.Label lbCurrDocCnt;
-        private System.Windows.Forms.Button btDocDelete;
         private System.Windows.Forms.Button btDocImport;
         private System.Windows.Forms.DataGridView dgvDoc;
         private System.Data.DataTable tbDoc;
@@ -1599,6 +1653,12 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn 第5天上报DataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn 步数状态DataGridViewTextBoxColumn;
         private System.Windows.Forms.ToolStripMenuItem dates删除记录ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 导入档案ToolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem 删除档案ToolStripMenuItem1;
+        private System.Windows.Forms.RadioButton rbtVbatMax;
+        private System.Windows.Forms.RadioButton rbtVbatMin;
+        private System.Windows.Forms.Button btCountDocInfo;
+        private System.Windows.Forms.RadioButton rbtRptCnt;
     }
 }
 
