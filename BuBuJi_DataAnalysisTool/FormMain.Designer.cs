@@ -519,37 +519,31 @@
             // tblDoc_AllRptCnt
             // 
             this.tblDoc_AllRptCnt.ColumnName = "总上报次数";
-            this.tblDoc_AllRptCnt.DataType = typeof(object);
+            this.tblDoc_AllRptCnt.DataType = typeof(decimal);
             // 
             // tblDoc_RptDay1
             // 
             this.tblDoc_RptDay1.ColumnName = "第1天上报";
-            this.tblDoc_RptDay1.DataType = typeof(object);
             // 
             // tblDoc_RptDay2
             // 
             this.tblDoc_RptDay2.ColumnName = "第2天上报";
-            this.tblDoc_RptDay2.DataType = typeof(object);
             // 
             // tblDoc_RptDay3
             // 
             this.tblDoc_RptDay3.ColumnName = "第3天上报";
-            this.tblDoc_RptDay3.DataType = typeof(object);
             // 
             // tblDoc_Day4
             // 
             this.tblDoc_Day4.ColumnName = "第4天上报";
-            this.tblDoc_Day4.DataType = typeof(object);
             // 
             // tblDoc_Day5
             // 
             this.tblDoc_Day5.ColumnName = "第5天上报";
-            this.tblDoc_Day5.DataType = typeof(object);
             // 
             // tblDoc_StepStatus
             // 
             this.tblDoc_StepStatus.ColumnName = "步数状态";
-            this.tblDoc_StepStatus.DataType = typeof(object);
             // 
             // btImport
             // 

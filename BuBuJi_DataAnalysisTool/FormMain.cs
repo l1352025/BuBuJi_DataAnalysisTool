@@ -38,7 +38,7 @@ namespace BuBuJi_DataAnalysisTool
         private Thread _thrUpdateUI;
         private ConcurrentQueue<UiMsg> _uiMsgQueue;
         private Queue<UiMsg> _uiMsgPool;
-        private const int _msgPoolSize = 20000;
+        private const int _msgPoolSize = 1000;
         private int _pageSize = 1000;
         private int _currPage;
         private int _pageCnt;
@@ -175,6 +175,7 @@ namespace BuBuJi_DataAnalysisTool
         #endregion
 
         #region UI更新-线程
+        delegate void Uinvoke();
         delegate void UiUpdateInvoke(UiMsg uiMsg);
         private void UiUpdate(UiMsg uiMsg)
         {
@@ -380,6 +381,7 @@ namespace BuBuJi_DataAnalysisTool
         private void dgv_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
         {
             int iStart = 0;
+            DataGridView dgv = ((DataGridView)sender);
 
             if (sender == dgvLog)
             {
@@ -388,8 +390,9 @@ namespace BuBuJi_DataAnalysisTool
 
             for (int i = e.RowIndex; i < ((DataGridView)sender).Rows.Count; )
             {
-                ((DataGridView)sender).Rows[i].HeaderCell.Value = ( iStart + (++i)).ToString();
+                dgv.Rows[i].HeaderCell.Value = ( iStart + (++i)).ToString();
             }
+            //dgv.FirstDisplayedScrollingRowIndex = dgv.RowCount - 1;
         }
         private void dgv_RowsRemoved(object sender, DataGridViewRowsRemovedEventArgs e)
         {
@@ -846,12 +849,14 @@ namespace BuBuJi_DataAnalysisTool
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
 
-                _sqldb.ExecuteNonQuery("PRAGMA synchronous = OFF");
-
                 // 打开数据库、创建事务处理
                 SQLiteConnection con = _sqldb.OpenConnection();
-                SQLiteTransaction trans = con.BeginTransaction();
                 SQLiteCommand cmd = new SQLiteCommand(con);
+
+                cmd.CommandText = "PRAGMA synchronous = OFF";
+                cmd.ExecuteNonQuery();
+
+                SQLiteTransaction trans = con.BeginTransaction();
                 SQLiteParameter[] values = new SQLiteParameter[12];
 
                 values[0] = new SQLiteParameter("@id");
@@ -953,7 +958,7 @@ namespace BuBuJi_DataAnalysisTool
                     }
 #endif
                         // 提交插入命令
-                        cmd.ExecuteNonQuery();
+                        _sqldb.ExecuteNonQuery(cmd);
 
                         cnt++;
                     }
@@ -1017,6 +1022,9 @@ namespace BuBuJi_DataAnalysisTool
                 // 提交事务处理
                 trans.Commit();
 
+                // 通知写入数据库文件
+                _sqldb.SendStartWriteDbEvent();
+
                 if (repeatCnt == 2)
                 {
                     ShowMsg("导入已终止：前2条记录数据库中已存在，可能该日志文件已导入过了\r\n", Color.Red, false);
@@ -1024,8 +1032,7 @@ namespace BuBuJi_DataAnalysisTool
                 else
                 {
                     // 查询总数
-
-                    MainInfoListUpdate();
+                    Invoke(new Uinvoke(MainInfoListUpdate), null);
                 }
 
                 timer.Stop();
@@ -1318,10 +1325,7 @@ namespace BuBuJi_DataAnalysisTool
             tbDates.Clear();
             tbStations.Clear();
             tbDevices.Clear();
-            tbDates.BeginLoadData();
-            tbStations.BeginLoadData();
-            tbDevices.BeginLoadData();
-
+            
             if(chkDate.Checked && DateTime.TryParse(txtDate.Text, out date))
             {
                 whereDate = " where date = '" + date.ToString("yyyy-MM-dd") + "' ";
@@ -1338,23 +1342,26 @@ namespace BuBuJi_DataAnalysisTool
                 "select date, count(*) from tblLog where isRepeatRpt = 0 group by date" :
                 "select date, count(*) from tblLog group by date");
             reader = _sqldb.ExecuteReader(sqlText);
+            tbDates.BeginLoadData();
             while (reader.Read())
             {
                 row = tbDates.NewRow();
                 row.BeginEdit();
-                row["日期"] = reader.GetString(0);
+                row["日期"] = reader.GetDateTime(0);
                 row["记录条数"] = reader.GetInt64(1);
                 row.EndEdit();
                 tbDates.Rows.Add(row);
             }
+            tbDates.EndLoadData();
             reader.Close();
-
+            
             // 查询基站列表
             sqlText = "Select stationId, count(t.stationId)" +
                 " From ( select stationId,deviceId from tblLog " 
                 + whereDate + "group by stationId, deviceId ) as t" +
                 " group by stationId";
             reader = _sqldb.ExecuteReader(sqlText);
+            tbStations.BeginLoadData();
             while (reader.Read())
             {
                 row = tbStations.NewRow();
@@ -1364,6 +1371,7 @@ namespace BuBuJi_DataAnalysisTool
                 row.EndEdit();
                 tbStations.Rows.Add(row);
             }
+            tbStations.EndLoadData();
             reader.Close();
 
             // 查询设备列表
@@ -1372,6 +1380,7 @@ namespace BuBuJi_DataAnalysisTool
                 + whereDate + (whereDate != "" ? " and isRepeatRpt = 0 " : " where isRepeatRpt = 0") +
                 " group by deviceId";
             reader = _sqldb.ExecuteReader(sqlText);
+            tbDevices.BeginLoadData();
             while (reader.Read())
             {
                 row = tbDevices.NewRow();
@@ -1381,11 +1390,8 @@ namespace BuBuJi_DataAnalysisTool
                 row.EndEdit();
                 tbDevices.Rows.Add(row);
             }
-            reader.Close();
-
-            tbDates.EndLoadData();
-            tbStations.EndLoadData();
             tbDevices.EndLoadData();
+            reader.Close();
 
             whereDate = (whereDate != "" ? "" + date.ToString("yyyy-MM-dd") : "所有");
             UpdateGrpDates(tbDates.Rows.Count);
@@ -1690,10 +1696,7 @@ namespace BuBuJi_DataAnalysisTool
             }
             strFileName = openFileDlg.FileName;
 
-            //ShowMsg("导入中。。。\r\n", Color.Blue, false);
-            rtbMsg.Text = "档案导入中。。。\r\n";
-            rtbMsg.ForeColor = Color.Blue;
-            rtbMsg.Refresh();
+            ShowMsg("档案导入中。。。\r\n", Color.Blue, false, true);
 
             StreamReader sr = new StreamReader(strFileName, Encoding.UTF8);
 
@@ -1750,7 +1753,7 @@ namespace BuBuJi_DataAnalysisTool
                         + "NULL,"   // id列自动生成
                         + dataFields[1] + 
                         ")";
-                    cmd.ExecuteNonQuery();
+                    _sqldb.ExecuteNonQuery(cmd);
 
                     cnt++;
                 }
@@ -1764,7 +1767,6 @@ namespace BuBuJi_DataAnalysisTool
 
             // 提交事务处理
             trans.Commit();
-
 
             if (cnt == 0)
             {
