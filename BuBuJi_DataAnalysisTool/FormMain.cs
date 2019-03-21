@@ -857,20 +857,20 @@ namespace BuBuJi_DataAnalysisTool
                 cmd.ExecuteNonQuery();
 
                 SQLiteTransaction trans = con.BeginTransaction();
-                SQLiteParameter[] values = new SQLiteParameter[12];
+                SQLiteParameter[] sqlParams = new SQLiteParameter[12];
 
-                values[0] = new SQLiteParameter("@id");
-                values[1] = new SQLiteParameter("@deviceId");
-                values[2] = new SQLiteParameter("@deviceStatus");
-                values[3] = new SQLiteParameter("@deviceVoltage");
-                values[4] = new SQLiteParameter("@stationId");
-                values[5] = new SQLiteParameter("@signalVal");
-                values[6] = new SQLiteParameter("@stepSum");
-                values[7] = new SQLiteParameter("@date");
-                values[8] = new SQLiteParameter("@dateTime");
-                values[9] = new SQLiteParameter("@version");
-                values[10] = new SQLiteParameter("@frameSn");
-                values[11] = new SQLiteParameter("@isRepeatRpt");
+                sqlParams[0] = new SQLiteParameter("@id");
+                sqlParams[1] = new SQLiteParameter("@deviceId");
+                sqlParams[2] = new SQLiteParameter("@deviceStatus");
+                sqlParams[3] = new SQLiteParameter("@deviceVoltage");
+                sqlParams[4] = new SQLiteParameter("@stationId");
+                sqlParams[5] = new SQLiteParameter("@signalVal");
+                sqlParams[6] = new SQLiteParameter("@stepSum");
+                sqlParams[7] = new SQLiteParameter("@date");
+                sqlParams[8] = new SQLiteParameter("@dateTime");
+                sqlParams[9] = new SQLiteParameter("@version");
+                sqlParams[10] = new SQLiteParameter("@frameSn");
+                sqlParams[11] = new SQLiteParameter("@isRepeatRpt");
 
                 cmd.Transaction = trans;
                 cmd.CommandText = "insert into tblLog"
@@ -878,7 +878,7 @@ namespace BuBuJi_DataAnalysisTool
                     + "signalVal, stepSum, date, dateTime, version, frameSn, isRepeatRpt )"
                     + " values ( @id, @deviceId, @deviceStatus, @deviceVoltage, @stationId, "
                     + "@signalVal, @stepSum, @date, @dateTime, @version, @frameSn, @isRepeatRpt )";
-                cmd.Parameters.AddRange(values);
+                cmd.Parameters.AddRange(sqlParams);
 
                 while ((strReadStr = sr.ReadLine()) != null)
                 {
@@ -888,51 +888,51 @@ namespace BuBuJi_DataAnalysisTool
                         if (index < 0) continue;
 
                         // id 列自动生成
-                        //values[0].Value = 0;
+                        //sqlParams[0].Value = 0;
 
                         index += 6;
                         // devId
-                        values[1].Value = strReadStr.Substring(index, 12);
+                        sqlParams[1].Value = strReadStr.Substring(index, 12);
                         index += 20;
                         // devStatus
-                        values[2].Value = strReadStr.Substring(index, 1);
+                        sqlParams[2].Value = strReadStr.Substring(index, 1);
                         index += 9;
                         // devVbat
-                        values[3].Value = strReadStr.Substring(index, 3);
+                        sqlParams[3].Value = strReadStr.Substring(index, 3);
                         index += 11;
                         // stationId
-                        values[4].Value = strReadStr.Substring(index, 12);
+                        sqlParams[4].Value = strReadStr.Substring(index, 12);
                         index += 20;
                         // signal
                         len = strReadStr.IndexOf("\"", index) - index;
-                        values[5].Value = strReadStr.Substring(index, len);
+                        sqlParams[5].Value = strReadStr.Substring(index, len);
                         index += len + 8;
                         // steps
                         len = strReadStr.IndexOf("\"", index) - index;
-                        values[6].Value = strReadStr.Substring(index, len);
+                        sqlParams[6].Value = strReadStr.Substring(index, len);
                         index += len + 8;
                         // date
-                        values[7].Value = strReadStr.Substring(index, 10);
+                        sqlParams[7].Value = strReadStr.Substring(index, 10);
                         // time
-                        values[8].Value = strReadStr.Substring(index, 19);
+                        sqlParams[8].Value = strReadStr.Substring(index, 19);
                         index += 30;
                         // version
                         len = strReadStr.IndexOf("\"", index) - index;
-                        values[9].Value = strReadStr.Substring(index, len);
+                        sqlParams[9].Value = strReadStr.Substring(index, len);
                         index += len + 8;
                         // frameSn
                         len = strReadStr.IndexOf("\"", index) - index;
-                        values[10].Value = strReadStr.Substring(index, len);
+                        sqlParams[10].Value = strReadStr.Substring(index, len);
                         // isRepeatRpt 列，0-没有重复, 1 - 重复
-                        values[11].Value = 1;
+                        sqlParams[11].Value = 1;
 
                         // 重复导入检查, 前2条重复则停止导入
                         if (repeatCnt != 0xFFFF)
                         {
                             if (_sqldb.ExecuteScalar( "select id from tblLog where"
-                                + " deviceId = " + values[1].Value + " and"
-                                + " stationId = " + values[4].Value + " and"
-                                + " datetime = '" + values[8].Value + "'") != null)
+                                + " deviceId = " + sqlParams[1].Value + " and"
+                                + " stationId = " + sqlParams[4].Value + " and"
+                                + " datetime = '" + sqlParams[8].Value + "'") != null)
                             {
                                 repeatCnt++;
                                 if (repeatCnt == 2) 
@@ -944,21 +944,21 @@ namespace BuBuJi_DataAnalysisTool
                         }
 #if fa
                     // 重复上报标记设置
-                    time = Convert.ToDateTime(values[8].Value);
+                    time = Convert.ToDateTime(sqlParams[8].Value);
                     sbSql.Clear();
                     sbSql.Append("select id from tblLog where "
-                        + "deviceId = " + values[1].Value + " and "
-                        + "frameSn = " + values[10].Value + " and "
-                        + "stepSum = " + values[6].Value + " and "
+                        + "deviceId = " + sqlParams[1].Value + " and "
+                        + "frameSn = " + sqlParams[10].Value + " and "
+                        + "stepSum = " + sqlParams[6].Value + " and "
                         + "datetime between '" + time.AddSeconds(-3).ToString("yyyy-MM-dd HH:mm:ss")
                         + "' and '" + time.AddSeconds(3).ToString("yyyy-MM-dd HH:mm:ss") + "'");
                     if (_sqldb.ExecuteScalar(sbSql.ToString()) != null)
                     {
-                        values[11].Value = 1;
+                        sqlParams[11].Value = 1;
                     }
 #endif
                         // 提交插入命令
-                        _sqldb.ExecuteNonQuery(cmd);
+                        _sqldb.ExecuteNonQuery(cmd.CommandText, sqlParams);
 
                         cnt++;
                     }
@@ -1022,16 +1022,13 @@ namespace BuBuJi_DataAnalysisTool
                 // 提交事务处理
                 trans.Commit();
 
-                // 通知写入数据库文件
-                _sqldb.SendStartWriteDbEvent();
-
                 if (repeatCnt == 2)
                 {
                     ShowMsg("导入已终止：前2条记录数据库中已存在，可能该日志文件已导入过了\r\n", Color.Red, false);
                 }
                 else
                 {
-                    // 查询总数
+                    // 查询总数、概要信息
                     Invoke(new Uinvoke(MainInfoListUpdate), null);
                 }
 
@@ -1749,7 +1746,7 @@ namespace BuBuJi_DataAnalysisTool
                     }
 
                     // 提交插入命令
-                    cmd.CommandText = "insert into tblDoc values ("
+                    cmd.CommandText = "insert into tblDoc sqlParams ("
                         + "NULL,"   // id列自动生成
                         + dataFields[1] + 
                         ")";

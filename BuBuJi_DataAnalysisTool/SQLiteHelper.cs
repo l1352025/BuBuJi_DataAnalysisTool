@@ -19,11 +19,12 @@ namespace BuBuJi_DataAnalysisTool
         private static SQLiteConnection _connectionDisk;
         private static SQLiteConnection _connectionMemory;
         private static ConcurrentQueue<SQLiteCommand> _noneQuerySqlQueue;
-        private static Queue<SQLiteCommand> _sqlCmdPool;
-        private const int SqlCmdPoolSize = 200000;
+        private static ConcurrentQueue<SQLiteCommand> _sqlCmdPool;
+        private static SQLiteCommand cmd;
+        private const int SqlCmdPoolSize = 500000;
         private static Thread _threadWriteDB;
         private static bool _isThreadWriteDbRuning;
-        private static ManualResetEvent _startWriteDbEvent;
+        private static bool _isClosingDB;
         public string ConnectionString{ get {return _connectionString;} }
         public SQLiteConnection ConnectionDisk { get { return _connectionDisk; } }
 
@@ -35,8 +36,7 @@ namespace BuBuJi_DataAnalysisTool
         {
             _connectionString = connStr;
             _noneQuerySqlQueue = new ConcurrentQueue<SQLiteCommand>();
-            _sqlCmdPool = new Queue<SQLiteCommand>(SqlCmdPoolSize);
-            _startWriteDbEvent = new ManualResetEvent(false);
+            _sqlCmdPool = new ConcurrentQueue<SQLiteCommand>();
             SQLiteCommand cmd;
             for(int i = 0 ; i < SqlCmdPoolSize; i++)
             {
@@ -210,13 +210,6 @@ namespace BuBuJi_DataAnalysisTool
 
         #region 非查询sql队列写数据库线程
         /// <summary>
-        /// 开始写数据库事件通知
-        /// </summary>
-        public void SendStartWriteDbEvent()
-        {
-            _startWriteDbEvent.Set();
-        }
-        /// <summary>
         /// 启动写数据库线程
         /// </summary>
         private void StartWriteDbThread()
@@ -224,8 +217,9 @@ namespace BuBuJi_DataAnalysisTool
             if (!_isThreadWriteDbRuning)
             {
                 _isThreadWriteDbRuning = true;
+                _isClosingDB = false;
                 _threadWriteDB = new Thread(WriteSqlToDBTask);
-                _threadWriteDB.IsBackground = true;
+                _threadWriteDB.IsBackground = false;
                 _threadWriteDB.Start();
             }
         }
@@ -237,7 +231,7 @@ namespace BuBuJi_DataAnalysisTool
             if(_isThreadWriteDbRuning)
             {
                 _isThreadWriteDbRuning = false;
-                _startWriteDbEvent.Set();
+                _isClosingDB = true;
                 _threadWriteDB.Join();
                 _threadWriteDB = null;
             }
@@ -248,8 +242,8 @@ namespace BuBuJi_DataAnalysisTool
         /// </summary>
         private void WriteSqlToDBTask()
         {
-            SQLiteCommand cmd;
             SQLiteTransaction trans;
+            int cnt = 0;
             if (_connectionDisk == null)
             {
                 _connectionDisk = new SQLiteConnection(ConnectionString);
@@ -259,21 +253,34 @@ namespace BuBuJi_DataAnalysisTool
                 _connectionDisk.Open();
             }
 
-            while(_isThreadWriteDbRuning)
+            while (_isThreadWriteDbRuning || _noneQuerySqlQueue.Count > 0)
             {
-                _startWriteDbEvent.WaitOne();
+
+                while (_noneQuerySqlQueue.Count < 20000 && _isClosingDB == false)
+                {
+                    Thread.Sleep(50);
+                }
+
                 trans = _connectionDisk.BeginTransaction();
-                while(_noneQuerySqlQueue != null && _noneQuerySqlQueue.TryDequeue(out cmd))
+                while (_noneQuerySqlQueue.Count > 0 && _noneQuerySqlQueue.TryDequeue(out cmd))
                 {
                     cmd.Connection = _connectionDisk;
-                    cmd.Transaction = trans;
+                    cmd.Transaction = null;
                     cmd.ExecuteNonQuery();
 
-                    //cmd.Parameters.Clear();
-                    //_sqlCmdPool.Enqueue(cmd);
+                    cmd.Dispose();
+
+                    cmd = new SQLiteCommand();
+                    _sqlCmdPool.Enqueue(cmd);
+
+                    if (_noneQuerySqlQueue.Count == 0 || cnt++ >= 20000)
+                    {
+                        cnt = 0;
+                        break;
+                    }
                 }
                 trans.Commit();
-                _startWriteDbEvent.Reset();
+                GC.Collect();
             }
             
             _connectionDisk.Close();
@@ -302,13 +309,17 @@ namespace BuBuJi_DataAnalysisTool
 
                 if (_connectionCurrent != _connectionDisk)
                 {
-                    SQLiteCommand newCmd = _sqlCmdPool.Dequeue();
-                    newCmd.CommandText = cmd.CommandText;
-                    foreach(SQLiteParameter param in cmd.Parameters)
+#if true
+                    SQLiteCommand newCmd;
+                    if(_sqlCmdPool.TryDequeue(out newCmd) == false)
                     {
-                        newCmd.Parameters.Add(param);
+                        newCmd = (SQLiteCommand)cmd.Clone();
                     }
+                    newCmd.CommandText = cmd.CommandText;
+                    newCmd.Parameters.AddRange(parameters);
                     _noneQuerySqlQueue.Enqueue(newCmd);
+#endif
+                    //_noneQuerySqlQueue.Enqueue((SQLiteCommand)cmd.Clone());
                 }
             }
             catch (Exception) { throw; }
@@ -330,16 +341,21 @@ namespace BuBuJi_DataAnalysisTool
 
                 if (_connectionCurrent != _connectionDisk)
                 {
-#if fa
-                    SQLiteCommand newCmd = _sqlCmdPool.Dequeue();
+#if true
+                    SQLiteCommand newCmd;
+                    if (_sqlCmdPool.TryDequeue(out newCmd) == false)
+                    {
+                        newCmd = (SQLiteCommand)cmd.Clone();
+                    }
                     newCmd.CommandText = cmd.CommandText;
                     foreach (SQLiteParameter param in cmd.Parameters)
                     {
                         newCmd.Parameters.Add(param);
                     }
+                    
                     _noneQuerySqlQueue.Enqueue(newCmd);
 #endif
-                    _noneQuerySqlQueue.Enqueue((SQLiteCommand)cmd.Clone());
+                    //_noneQuerySqlQueue.Enqueue((SQLiteCommand)cmd.Clone());
                 }
             }
             catch (Exception) { throw; }
