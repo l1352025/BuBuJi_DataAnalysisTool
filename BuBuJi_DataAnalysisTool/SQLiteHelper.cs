@@ -18,10 +18,11 @@ namespace BuBuJi_DataAnalysisTool
         private static SQLiteConnection _connectionCurrent;
         private static SQLiteConnection _connectionDisk;
         private static SQLiteConnection _connectionMemory;
-        private static ConcurrentQueue<SQLiteCommand> _noneQuerySqlQueue;
+        private static ConcurrentQueue<SQLiteCommand> _queue1;
+        private static ConcurrentQueue<SQLiteCommand> _queue2;
+        private static ConcurrentQueue<SQLiteCommand> _currWriteQueue;
         private static ConcurrentQueue<SQLiteCommand> _sqlCmdPool;
-        private static SQLiteCommand cmd;
-        private const int SqlCmdPoolSize = 500000;
+        private const int SqlCmdPoolSize = 700000;
         private static Thread _threadWriteDB;
         private static bool _isThreadWriteDbRuning;
         private static bool _isClosingDB;
@@ -35,7 +36,9 @@ namespace BuBuJi_DataAnalysisTool
         public SQLiteHelper(string connStr)
         {
             _connectionString = connStr;
-            _noneQuerySqlQueue = new ConcurrentQueue<SQLiteCommand>();
+            _queue1 = new ConcurrentQueue<SQLiteCommand>();
+            _queue2 = new ConcurrentQueue<SQLiteCommand>();
+            _currWriteQueue = _queue1;
             _sqlCmdPool = new ConcurrentQueue<SQLiteCommand>();
             SQLiteCommand cmd;
             for(int i = 0 ; i < SqlCmdPoolSize; i++)
@@ -43,11 +46,6 @@ namespace BuBuJi_DataAnalysisTool
                 cmd = new SQLiteCommand();
                 _sqlCmdPool.Enqueue(cmd);
             }
-        }
-
-        public SQLiteHelper(string datasource, string version, string password)
-            :this(string.Format("Data Source={0};Version={1};password={2}",datasource, version, password))
-        {
         }
 
         /// <summary>
@@ -243,6 +241,8 @@ namespace BuBuJi_DataAnalysisTool
         private void WriteSqlToDBTask()
         {
             SQLiteTransaction trans;
+            SQLiteCommand cmd;
+            ConcurrentQueue<SQLiteCommand> currReadQueue;
             int cnt = 0;
             if (_connectionDisk == null)
             {
@@ -253,34 +253,40 @@ namespace BuBuJi_DataAnalysisTool
                 _connectionDisk.Open();
             }
 
-            while (_isThreadWriteDbRuning || _noneQuerySqlQueue.Count > 0)
+            while (_isThreadWriteDbRuning || _queue1.Count > 0 || _queue2.Count > 0)
             {
-
-                while (_noneQuerySqlQueue.Count < 20000 && _isClosingDB == false)
+                while (_currWriteQueue.Count < 20000 && cnt < 3 && _isClosingDB == false)
                 {
-                    Thread.Sleep(50);
+                    Thread.Sleep(1000);
+                    cnt++;
                 }
+                cnt = 0;
+
+                currReadQueue = _currWriteQueue;
+                _currWriteQueue = (_currWriteQueue == _queue1 ? _queue2 : _queue1);
+
+                if (currReadQueue.Count == 0) continue;
 
                 trans = _connectionDisk.BeginTransaction();
-                while (_noneQuerySqlQueue.Count > 0 && _noneQuerySqlQueue.TryDequeue(out cmd))
+                while (currReadQueue.Count > 0 && currReadQueue.TryDequeue(out cmd))
                 {
                     cmd.Connection = _connectionDisk;
-                    cmd.Transaction = null;
+                    cmd.Transaction = trans;
                     cmd.ExecuteNonQuery();
 
                     cmd.Dispose();
-
-                    cmd = new SQLiteCommand();
-                    _sqlCmdPool.Enqueue(cmd);
-
-                    if (_noneQuerySqlQueue.Count == 0 || cnt++ >= 20000)
-                    {
-                        cnt = 0;
-                        break;
-                    }
                 }
                 trans.Commit();
                 GC.Collect();
+
+                if (_sqlCmdPool.Count < SqlCmdPoolSize)
+                {
+                    for (int i = 0; i < SqlCmdPoolSize - _sqlCmdPool.Count; i++)
+                    {
+                        cmd = new SQLiteCommand();
+                        _sqlCmdPool.Enqueue(cmd);
+                    }
+                }
             }
             
             _connectionDisk.Close();
@@ -309,17 +315,18 @@ namespace BuBuJi_DataAnalysisTool
 
                 if (_connectionCurrent != _connectionDisk)
                 {
-#if true
                     SQLiteCommand newCmd;
-                    if(_sqlCmdPool.TryDequeue(out newCmd) == false)
+                    if (_sqlCmdPool.TryDequeue(out newCmd) == false)
                     {
                         newCmd = (SQLiteCommand)cmd.Clone();
                     }
                     newCmd.CommandText = cmd.CommandText;
-                    newCmd.Parameters.AddRange(parameters);
-                    _noneQuerySqlQueue.Enqueue(newCmd);
-#endif
-                    //_noneQuerySqlQueue.Enqueue((SQLiteCommand)cmd.Clone());
+                    foreach (SQLiteParameter param in cmd.Parameters)
+                    {
+                        newCmd.Parameters.Add(param.Clone());
+                    }
+
+                    _currWriteQueue.Enqueue(newCmd);
                 }
             }
             catch (Exception) { throw; }
@@ -341,7 +348,6 @@ namespace BuBuJi_DataAnalysisTool
 
                 if (_connectionCurrent != _connectionDisk)
                 {
-#if true
                     SQLiteCommand newCmd;
                     if (_sqlCmdPool.TryDequeue(out newCmd) == false)
                     {
@@ -350,12 +356,12 @@ namespace BuBuJi_DataAnalysisTool
                     newCmd.CommandText = cmd.CommandText;
                     foreach (SQLiteParameter param in cmd.Parameters)
                     {
-                        newCmd.Parameters.Add(param);
+                        newCmd.Parameters.Add(param.Clone());
                     }
-                    
-                    _noneQuerySqlQueue.Enqueue(newCmd);
-#endif
-                    //_noneQuerySqlQueue.Enqueue((SQLiteCommand)cmd.Clone());
+
+                    _currWriteQueue.Enqueue(newCmd);
+
+                    //_currWriteQueue.Enqueue((SQLiteCommand)cmd.Clone());
                 }
             }
             catch (Exception) { throw; }
@@ -382,7 +388,18 @@ namespace BuBuJi_DataAnalysisTool
 
                     if (_connectionCurrent != _connectionDisk)
                     {
-                        _noneQuerySqlQueue.Enqueue((SQLiteCommand)cmd.Clone());
+                        SQLiteCommand newCmd;
+                        if (_sqlCmdPool.TryDequeue(out newCmd) == false)
+                        {
+                            newCmd = (SQLiteCommand)cmd.Clone();
+                        }
+                        newCmd.CommandText = cmd.CommandText;
+                        foreach (SQLiteParameter param in cmd.Parameters)
+                        {
+                            newCmd.Parameters.Add(param.Clone());
+                        }
+
+                        _currWriteQueue.Enqueue(newCmd);
                     }
                 }
                 trans.Commit();
@@ -404,7 +421,18 @@ namespace BuBuJi_DataAnalysisTool
 
                     if (_connectionCurrent != _connectionDisk)
                     {
-                        _noneQuerySqlQueue.Enqueue((SQLiteCommand)cmd.Clone());
+                        SQLiteCommand newCmd;
+                        if (_sqlCmdPool.TryDequeue(out newCmd) == false)
+                        {
+                            newCmd = (SQLiteCommand)cmd.Clone();
+                        }
+                        newCmd.CommandText = cmd.CommandText;
+                        foreach (SQLiteParameter param in cmd.Parameters)
+                        {
+                            newCmd.Parameters.Add(param.Clone());
+                        }
+
+                        _currWriteQueue.Enqueue(newCmd);
                     }
                 }
                 trans.Commit();

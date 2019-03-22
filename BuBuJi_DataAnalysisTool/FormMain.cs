@@ -268,7 +268,6 @@ namespace BuBuJi_DataAnalysisTool
         private void InitialDb()
         {
             string dbName = Path.GetDirectoryName(Application.ExecutablePath) + "\\database.db";
-
             if (_sqldb == null)
             {
                 _sqldb = new SQLiteHelper("provider=System.Data.SQLite; data source=" + dbName);
@@ -292,7 +291,6 @@ namespace BuBuJi_DataAnalysisTool
                 ")";
                 _sqldb.ExecuteNonQuery(sql);
 
-#if true
                 // index idx on tblLog
                 sql = "CREATE INDEX IF NOT EXISTS idx ON tblLog ( " +
                     "deviceId," +
@@ -307,7 +305,6 @@ namespace BuBuJi_DataAnalysisTool
                     "isRepeatRpt" + 
                 ")";
                 _sqldb.ExecuteNonQuery(sql);
-#endif
 
                 // table tblDoc
                 sql = "CREATE TABLE IF NOT EXISTS tblDoc ( " +
@@ -821,30 +818,35 @@ namespace BuBuJi_DataAnalysisTool
         #region 导入日志文件
         private void btImport_Click(object sender, EventArgs e)
         {
-            string strFileName;
+            string[] strFileNames;
             OpenFileDialog openFileDlg = new OpenFileDialog();
 
             openFileDlg.Filter = "*.log(文本文件)|*.log|*.*(所有文件)|*.*";
             openFileDlg.DefaultExt = "log";
             openFileDlg.FileName = "";
+            openFileDlg.Multiselect = true;
             if (DialogResult.OK != openFileDlg.ShowDialog() || openFileDlg.FileName.Length == 0)
             {
                 return;
             }
-            strFileName = openFileDlg.FileName;
+            if (openFileDlg.FileNames.Length > 5)
+            {
+                ShowMsg("防止内存消耗太大，一次性最多导入5天的数据\r\n", Color.Red);
+                return;
+            }
+            strFileNames = new string[openFileDlg.FileNames.Length];
+            openFileDlg.FileNames.CopyTo(strFileNames, 0);
 
             ShowMsg("Log导入中。。。\r\n", Color.Blue, false, true);
 
             Thread t = new Thread(new ThreadStart(delegate
             {
-                StreamReader sr = new StreamReader(strFileName, Encoding.UTF8);
+                if (_sqldb == null) return;
 
-                int index, len, cnt = 0, repeatCnt = 0;
+                int index, len, cnt = 0, repeatCnt = 0, fileIdx = 0;
                 StringBuilder sbSql = new StringBuilder();
                 string strReadStr;
-                //DateTime time;
-
-                if (_sqldb == null) return;
+                StreamReader sr;
 
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
@@ -856,7 +858,7 @@ namespace BuBuJi_DataAnalysisTool
                 cmd.CommandText = "PRAGMA synchronous = OFF";
                 cmd.ExecuteNonQuery();
 
-                SQLiteTransaction trans = con.BeginTransaction();
+                SQLiteTransaction trans;
                 SQLiteParameter[] sqlParams = new SQLiteParameter[12];
 
                 sqlParams[0] = new SQLiteParameter("@id");
@@ -872,13 +874,19 @@ namespace BuBuJi_DataAnalysisTool
                 sqlParams[10] = new SQLiteParameter("@frameSn");
                 sqlParams[11] = new SQLiteParameter("@isRepeatRpt");
 
-                cmd.Transaction = trans;
                 cmd.CommandText = "insert into tblLog"
                     + " ( id, deviceId, deviceStatus, deviceVoltage, stationId, "
                     + "signalVal, stepSum, date, dateTime, version, frameSn, isRepeatRpt )"
                     + " values ( @id, @deviceId, @deviceStatus, @deviceVoltage, @stationId, "
                     + "@signalVal, @stepSum, @date, @dateTime, @version, @frameSn, @isRepeatRpt )";
                 cmd.Parameters.AddRange(sqlParams);
+
+                ImportStartEntry:    // 开始导入
+                sr = new StreamReader(strFileNames[fileIdx++], Encoding.UTF8);
+                repeatCnt = 0;
+
+                trans = con.BeginTransaction();
+                cmd.Transaction = trans;
 
                 while ((strReadStr = sr.ReadLine()) != null)
                 {
@@ -958,7 +966,7 @@ namespace BuBuJi_DataAnalysisTool
                     }
 #endif
                         // 提交插入命令
-                        _sqldb.ExecuteNonQuery(cmd.CommandText, sqlParams);
+                        _sqldb.ExecuteNonQuery(cmd);
 
                         cnt++;
                     }
@@ -1018,19 +1026,24 @@ namespace BuBuJi_DataAnalysisTool
                     }
                 }
 #endif
-
                 // 提交事务处理
                 trans.Commit();
 
+                // 前2条重复，提示该文件未导入
                 if (repeatCnt == 2)
                 {
-                    ShowMsg("导入已终止：前2条记录数据库中已存在，可能该日志文件已导入过了\r\n", Color.Red, false);
+                    ShowMsg("导入已终止：该日志文件可能已导入过了\r\n    " + strFileNames[fileIdx -1] + "\r\n", Color.Red, false);
                 }
-                else
+
+                // 导入剩余文件
+                if (fileIdx < strFileNames.Length)
                 {
-                    // 查询总数、概要信息
-                    Invoke(new Uinvoke(MainInfoListUpdate), null);
+                    Thread.Sleep(1000);
+                    goto ImportStartEntry;
                 }
+
+                // 查询总数、概要信息
+                Invoke(new Uinvoke(MainInfoListUpdate), null);
 
                 timer.Stop();
                 ShowMsg("导入 " + cnt + " 条记录完成！ 当前记录总数 " + _recordCnt + " 用时 " +
@@ -1746,7 +1759,7 @@ namespace BuBuJi_DataAnalysisTool
                     }
 
                     // 提交插入命令
-                    cmd.CommandText = "insert into tblDoc sqlParams ("
+                    cmd.CommandText = "insert into tblDoc values ("
                         + "NULL,"   // id列自动生成
                         + dataFields[1] + 
                         ")";
