@@ -673,7 +673,7 @@ namespace BuBuJi_DataAnalysisTool
             }
             catch (Exception ex)
             {
-                ShowMsg("导出Excel文件失败：" + ex.Message + "\r\n", Color.Red);
+                ShowMsg("导出Excel文件失败：" + ex.Message + "\r\n", Color.Red, false);
             }
             finally
             {
@@ -800,7 +800,7 @@ namespace BuBuJi_DataAnalysisTool
             }
             catch (Exception ex)
             {
-                ShowMsg("导出Excel文件失败：" + ex.Message + "\r\n", Color.Red);
+                ShowMsg("导出Excel文件失败：" + ex.Message + "\r\n", Color.Red, false);
             }
             finally
             {
@@ -831,7 +831,7 @@ namespace BuBuJi_DataAnalysisTool
             }
             if (openFileDlg.FileNames.Length > 5)
             {
-                ShowMsg("防止内存消耗太大，一次性最多导入5天的数据\r\n", Color.Red);
+                ShowMsg("防止内存消耗太大，一次性最多导入5天的数据\r\n", Color.Red, false);
                 return;
             }
             strFileNames = new string[openFileDlg.FileNames.Length];
@@ -972,7 +972,8 @@ namespace BuBuJi_DataAnalysisTool
                     }
                     catch (Exception ex)
                     {
-                        ShowMsg("第" + tbLog.Rows.Count.ToString() + "行日志格式错误，" + ex.Message + "\r\n", Color.Red);
+                        ShowMsg("第" + tbLog.Rows.Count.ToString() + "行日志格式错误，" 
+                            + ex.Message + "\r\n", Color.Red, false);
                         break;
                     }
                 }
@@ -1032,7 +1033,8 @@ namespace BuBuJi_DataAnalysisTool
                 // 前2条重复，提示该文件未导入
                 if (repeatCnt == 2)
                 {
-                    ShowMsg("导入已终止：该日志文件可能已导入过了\r\n    " + strFileNames[fileIdx -1] + "\r\n", Color.Red, false);
+                    ShowMsg("导入已终止：该日志文件可能已导入过了\r\n    " 
+                        + strFileNames[fileIdx -1] + "\r\n", Color.Red, false);
                 }
 
                 // 导入剩余文件
@@ -1177,7 +1179,7 @@ namespace BuBuJi_DataAnalysisTool
             // 查询条件设置
             if((sqlText = GetQueryCondition()) == "error")
             {
-                ShowMsg("查询条件输入值无效，请修正!\r\n", Color.Red);
+                ShowMsg("查询条件输入值无效，请修正!\r\n", Color.Red, false);
                 return;
             }
             _currSelCondition = sqlText;
@@ -1420,7 +1422,8 @@ namespace BuBuJi_DataAnalysisTool
             MainInfoListUpdate();
 
             timer.Stop();
-            ShowMsg("统计[概要信息]完成！ 用时 " + timer.Elapsed.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
+            ShowMsg("统计[概要信息]完成！ 用时 " 
+                + timer.Elapsed.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
         }
         #endregion
 
@@ -1590,7 +1593,7 @@ namespace BuBuJi_DataAnalysisTool
                 int pageNum = Convert.ToInt32(txtCurrPage.Text);
                 if (pageNum > _pageCnt || pageNum == 0)
                 {
-                    ShowMsg("请输入正确的页序号：最小为1，最大为" + _pageCnt + "\r\n", Color.Red);
+                    ShowMsg("请输入正确的页序号：最小为1，最大为" + _pageCnt + "\r\n", Color.Red, false);
                     txtCurrPage.Text = _currPage.ToString();
                     return;
                 }
@@ -1769,7 +1772,8 @@ namespace BuBuJi_DataAnalysisTool
                 }
                 catch (Exception ex)
                 {
-                    ShowMsg("第" + tbLog.Rows.Count.ToString() + "行档案格式错误，" + ex.Message + "\r\n", Color.Red);
+                    ShowMsg("第" + tbLog.Rows.Count.ToString() + "行档案格式错误，" 
+                        + ex.Message + "\r\n", Color.Red, false);
                     break;
                 }
             }
@@ -1871,7 +1875,7 @@ namespace BuBuJi_DataAnalysisTool
         {
             if(dgvDoc.SelectedRows.Count == 0)
             {
-                ShowMsg("请先在列表中选择要删除的档案！\r\n", Color.Red);
+                ShowMsg("请先在列表中选择要删除的档案！\r\n", Color.Red, false);
                 return;
             }
 
@@ -1989,7 +1993,7 @@ namespace BuBuJi_DataAnalysisTool
 
             if (tbDoc.Rows.Count == 0)
             {
-                ShowMsg("如果要统计每个设备每天上报和步数情况，请先导入档案！\r\n", Color.Red);
+                ShowMsg("如果要统计每个设备每天上报和步数情况，请先导入档案！\r\n", Color.Red, false);
                 return;
             }
 
@@ -2125,7 +2129,7 @@ namespace BuBuJi_DataAnalysisTool
 
             if (tbDoc.Rows.Count == 0)
             {
-                ShowMsg("如果要统计每个设备每天上报/步数/电压情况，请先导入档案！\r\n", Color.Red);
+                ShowMsg("如果要统计每个设备每天上报/步数/电压情况，请先导入档案！\r\n", Color.Red, false);
                 return;
             }
 
@@ -2183,7 +2187,8 @@ namespace BuBuJi_DataAnalysisTool
             tabControl1.SelectedTab = tabPage2;
 
             timer.Stop();
-            ShowMsg("统计[" + info + "]完成！ 用时 " + timer.Elapsed.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
+            ShowMsg("统计[" + info + "]完成！ 用时 " 
+                + timer.Elapsed.TotalSeconds.ToString("F3") + " s\r\n", Color.Blue, false);
         }
         #endregion
     }
