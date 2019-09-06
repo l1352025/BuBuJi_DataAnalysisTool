@@ -105,7 +105,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="jibu-32.ico" />
     <Content Include="jibu2-32.ico" />
     <Content Include="System.Data.SQLite.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
